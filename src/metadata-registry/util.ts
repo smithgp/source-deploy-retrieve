@@ -8,6 +8,8 @@
 import { SourcePath, MetadataXml } from './types';
 import { basename, join } from 'path';
 import { readdirSync, lstatSync } from 'fs';
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const rustWalk = require('../../../walker').walk;
 
 /**
  * Returns the `MetadataXml` info from a given file path. If the path is not a
@@ -41,6 +43,9 @@ export const walk = (
   dir: SourcePath,
   ignorePaths?: Set<SourcePath>
 ): SourcePath[] => {
+  if (process.env.RUST_WALK === 'true') {
+    return rustWalk(dir, Array.from(ignorePaths));
+  }
   const paths: SourcePath[] = [];
   for (const file of readdirSync(dir)) {
     const path = join(dir, file);

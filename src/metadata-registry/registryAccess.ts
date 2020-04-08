@@ -23,6 +23,8 @@ import {
 import { TypeInferenceError } from '../errors';
 import { registryData } from '.';
 import { MixedContent } from './adapters/mixedContent';
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { searchForComponents } = require('../../../walker');
 
 /**
  * Infer information about metadata types and components based on source paths.
@@ -77,6 +79,10 @@ export class RegistryAccess {
           }
         }
       }
+      if (process.env.RUST_WALK === 'true') {
+        // eslint-disable-next-line @typescript-eslint/no-use-before-define
+        return searchForComponents(fsPath, fetchAndCheck, this);
+      }
       return this.getComponentsFromPathInternal(fsPath);
     }
     return [this.fetchComponent(fsPath)];
@@ -110,7 +116,7 @@ export class RegistryAccess {
     return typeId;
   }
 
-  private fetchComponent(fsPath: SourcePath): MetadataComponent {
+  public fetchComponent(fsPath: SourcePath): MetadataComponent {
     const typeId = this.determineTypeId(fsPath);
     if (typeId) {
       const adapterId = this.data.adapters[typeId] as AdapterId;
@@ -153,7 +159,54 @@ export class RegistryAccess {
     return components;
   }
 
+  private fetchAndCheck(
+    fsPath: SourcePath
+  ): { component: MetadataComponent; breakEarly: boolean } {
+    try {
+      // if (parseMetadataXml(fsPath)) {
+      const component = this.fetchComponent(fsPath);
+      // don't traverse further if not in a root type directory. performance optimization
+      // for mixed content types and ensures we don't add duplicates of the component.
+      const isMixedContent = !!this.data.mixedContent[
+        component.type.directoryName
+      ];
+      const typeDir = basename(
+        dirname(component.type.inFolder ? dirname(fsPath) : fsPath)
+      );
+      const breakEarly =
+        isMixedContent && typeDir !== component.type.directoryName;
+      return { component, breakEarly };
+    } catch (e) {
+      console.log(e);
+    }
+  }
+  // }
+
   public getApiVersion(): string {
     return this.data.apiVersion;
+  }
+}
+
+function fetchAndCheck(params: {
+  self: RegistryAccess;
+  fsPath: SourcePath;
+}): { component: MetadataComponent; breakEarly: boolean } {
+  try {
+    const { self, fsPath } = params;
+    // if (parseMetadataXml(fsPath)) {
+    const component = self.fetchComponent(fsPath);
+    // don't traverse further if not in a root type directory. performance optimization
+    // for mixed content types and ensures we don't add duplicates of the component.
+    const isMixedContent = !!self.data.mixedContent[
+      component.type.directoryName
+    ];
+    const typeDir = basename(
+      dirname(component.type.inFolder ? dirname(fsPath) : fsPath)
+    );
+    const breakEarly =
+      isMixedContent && typeDir !== component.type.directoryName;
+    return { component, breakEarly };
+  } catch (e) {
+    console.log(e);
   }
 }
