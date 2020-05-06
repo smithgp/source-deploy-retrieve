@@ -29,7 +29,14 @@
   },
   "dependencies": {
     "@salesforce/core": "2.4.0",
+    "adm-zip": "0.4.13",
+    "archiver": "1.0.1",
+    "bluebird": "3.5.5",
+    "bunyan-sfdx-no-dtrace": "1.8.2",
+    "fs-extra": "4.0.3",
     "gitignore-parser": "^0.0.2",
+    "heroku-cli-util": "8.0.11",
+    "mime": "1.6.0",
     "xmldom-sfdx-encoding": "^0.1.29"
   },
   "devDependencies": {
