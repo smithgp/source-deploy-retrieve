@@ -1,6 +1,9 @@
 import { MetadataComponent } from '../types';
 import { SimpleTransformer } from './transformers/simple';
 import { MetadataTransformer } from './transformers';
+import { ManifestGenerator } from '../metadata-registry';
+import { writeFileSync, writeFile } from 'fs';
+import { join } from 'path';
 
 function getTransformer(component: MetadataComponent): MetadataTransformer {
   // determine transformer to use from component's type
@@ -15,12 +18,17 @@ export async function convertSource(
   destination: string
 ): Promise<MetadataComponent[]> {
   const metadataFormat: MetadataComponent[] = [];
+  const manifest = new ManifestGenerator();
   for (const component of sourceFormat) {
     // this transformer is just writing to an fs writestream. ideally we could pass
     // in whatever WritableStream we want like a zip depending on the use case.
     const transformer = getTransformer(component);
     metadataFormat.push(await transformer.toApiFormat(component, destination));
   }
+  writeFileSync(
+    join(destination, 'package.xml'),
+    manifest.createManifest(sourceFormat)
+  );
   // in addition to doing the conversion, we return the components in "metadata api format" pointing
   // to the new location. This doesn't actually work right now
   return metadataFormat;

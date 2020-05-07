@@ -22,4 +22,6 @@ export {
 } from './types';
 
 export { SourceClient } from './client';
+
 export { convertSource } from './convert';
+export { convertSourceCli } from './cli-sdd';
