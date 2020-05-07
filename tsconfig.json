@@ -6,12 +6,12 @@
     "sourceMap": true,
     "declaration": true,
     "moduleResolution": "node",
-    "noImplicitAny": true,
     // Needed in order to import registry.json
     "resolveJsonModule": true,
     "rootDir": "src",
     "outDir": "lib",
-    "preserveConstEnums": true
+    "preserveConstEnums": true,
+    "skipLibCheck": true
   },
   "exclude": ["node_modules", "lib", "test"]
 }
