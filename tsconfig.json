@@ -10,7 +10,8 @@
     "resolveJsonModule": true,
     "rootDir": "src",
     "outDir": "lib",
-    "preserveConstEnums": true
+    "preserveConstEnums": true,
+    "skipLibCheck": true
   },
   "exclude": ["node_modules", "lib", "test"]
 }

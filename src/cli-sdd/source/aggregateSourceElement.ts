@@ -20,7 +20,10 @@ import { DecompositionStrategy } from './decompositionStrategy/decompositionStra
 import { DecompositionStrategyFactory } from './decompositionStrategy/decompositionStrategyFactory';
 import { DecompositionWorkspaceStrategy } from './decompositionStrategy/decompositionWorkspaceStrategy';
 import { DecompositionCommitStrategy } from './decompositionStrategy/decompositionCommitStrategy';
-import { MetadataDocument, MetadataDocumentAnnotation } from './metadataDocument';
+import {
+  MetadataDocument,
+  MetadataDocumentAnnotation
+} from './metadataDocument';
 import { DecomposedSubtypeConfig } from './decompositionStrategy/decompositionConfig';
 import { WorkspaceElement } from './workspaceElement';
 import { ContentDecompositionStrategy } from './decompositionStrategy/contentDecompositionStrategy';
@@ -91,7 +94,9 @@ export class AggregateSourceElement {
     this.aggregateFullName = aggregateFullName;
     this.metadataFilePath = aggregateMetadataFilePath;
     this.packageInfoCache = PackageInfoCache.getInstance();
-    this.packageName = this.packageInfoCache.getPackageNameFromSourcePath(this.metadataFilePath);
+    this.packageName = this.packageInfoCache.getPackageNameFromSourcePath(
+      this.metadataFilePath
+    );
 
     this.decompStrategy = DecompositionStrategyFactory.newDecompositionStrategy(
       this.metadataType.getDecompositionConfig()
@@ -117,7 +122,10 @@ export class AggregateSourceElement {
     return this.metadataType;
   }
 
-  static getKeyFromMetadataNameAndFullName(aggregateMetadataName: string, aggregateFullName: string): string {
+  static getKeyFromMetadataNameAndFullName(
+    aggregateMetadataName: string,
+    aggregateFullName: string
+  ): string {
     return `${aggregateMetadataName}__${aggregateFullName}`;
   }
 
@@ -155,8 +163,14 @@ export class AggregateSourceElement {
    * @param fullNameForPath
    * @returns {string[]}
    */
-  getWorkspacePathsForTypeAndFullName(metadataTypeName, fullNameForPath): string[] {
-    const contentPathsForFullName = this.getContentWorkspacePathsForTypeAndFullName(metadataTypeName, fullNameForPath);
+  getWorkspacePathsForTypeAndFullName(
+    metadataTypeName,
+    fullNameForPath
+  ): string[] {
+    const contentPathsForFullName = this.getContentWorkspacePathsForTypeAndFullName(
+      metadataTypeName,
+      fullNameForPath
+    );
     const metadataPathsForFullName = this.getMetadataWorkspacePathsForTypeAndFullName(
       metadataTypeName,
       fullNameForPath
@@ -164,29 +178,44 @@ export class AggregateSourceElement {
     return contentPathsForFullName.concat(metadataPathsForFullName);
   }
 
-  getContentWorkspacePathsForTypeAndFullName(metadataTypeName: string, fullNameForPath: string): string[] {
+  getContentWorkspacePathsForTypeAndFullName(
+    metadataTypeName: string,
+    fullNameForPath: string
+  ): string[] {
     // get content file paths
     const allContentPaths = this.getContentPaths(this.getMetadataFilePath());
     return allContentPaths.filter(contentPath => {
-      const contentMetadataType = MetadataTypeFactory.getMetadataTypeFromSourcePath(contentPath, this.metadataRegistry);
+      const contentMetadataType = MetadataTypeFactory.getMetadataTypeFromSourcePath(
+        contentPath,
+        this.metadataRegistry
+      );
       const fullName = contentMetadataType.getFullNameFromFilePath(contentPath);
       return fullName === fullNameForPath;
     });
   }
 
-  getMetadataWorkspacePathsForTypeAndFullName(metadataTypeName: string, fullNameForPath: string): string[] {
+  getMetadataWorkspacePathsForTypeAndFullName(
+    metadataTypeName: string,
+    fullNameForPath: string
+  ): string[] {
     const wantedMetadataType = MetadataTypeFactory.getMetadataTypeFromMetadataName(
       metadataTypeName,
       this.metadataRegistry
     );
-    const allDecomposedPaths = this.getMetadataPaths(this.getMetadataFilePath());
+    const allDecomposedPaths = this.getMetadataPaths(
+      this.getMetadataFilePath()
+    );
     return allDecomposedPaths.filter(decomposedPath => {
       const decomposedMetadataType = MetadataTypeFactory.getMetadataTypeFromSourcePath(
         decomposedPath,
         this.metadataRegistry
       );
-      if (decomposedMetadataType.constructor === wantedMetadataType.constructor) {
-        const decomposedFullName = decomposedMetadataType.getFullNameFromFilePath(decomposedPath);
+      if (
+        decomposedMetadataType.constructor === wantedMetadataType.constructor
+      ) {
+        const decomposedFullName = decomposedMetadataType.getFullNameFromFilePath(
+          decomposedPath
+        );
         return fullNameForPath === decomposedFullName;
       }
       return false;
@@ -236,19 +265,34 @@ export class AggregateSourceElement {
    */
   validateIfDeletedWorkspaceElement(workspaceElement): void {
     if (workspaceElement.getState() === sourceState.DELETED) {
-      const contentPaths = this.metadataType.hasContent() ? this.getContentPaths(this.getMetadataFilePath()) : [];
+      const contentPaths = this.metadataType.hasContent()
+        ? this.getContentPaths(this.getMetadataFilePath())
+        : [];
 
       // If the metadata file was deleted and not the content file, throw an error
       // Or if the container path for the fine-grained item was deleted but other decomposed items exist, throw an error
       if (workspaceElement.getSourcePath() === this.getContainerPath()) {
-        const allDecomposedPaths = this.getMetadataPaths(this.getMetadataFilePath());
+        const allDecomposedPaths = this.getMetadataPaths(
+          this.getMetadataFilePath()
+        );
 
-        if ((this.metadataType.hasContent() && contentPaths.length !== 0) || allDecomposedPaths.length !== 0) {
+        if (
+          (this.metadataType.hasContent() && contentPaths.length !== 0) ||
+          allDecomposedPaths.length !== 0
+        ) {
           if (!this.decompStrategy.isComposable()) {
-            throw almError('MissingMetadataFile', [workspaceElement.getSourcePath()]);
+            throw almError('MissingMetadataFile', [
+              workspaceElement.getSourcePath()
+            ]);
           } else {
-            if (!this.getMetadataType().isStandardMember(workspaceElement.getFullName())) {
-              throw almError('MissingMetadataFile', [workspaceElement.getSourcePath()]);
+            if (
+              !this.getMetadataType().isStandardMember(
+                workspaceElement.getFullName()
+              )
+            ) {
+              throw almError('MissingMetadataFile', [
+                workspaceElement.getSourcePath()
+              ]);
             }
           }
         }
@@ -263,7 +307,10 @@ export class AggregateSourceElement {
   }
 
   private getContainerPath(): string {
-    return this.workspaceStrategy.getContainerPath(this.getMetadataFilePath(), this.metadataType.getExt());
+    return this.workspaceStrategy.getContainerPath(
+      this.getMetadataFilePath(),
+      this.metadataType.getExt()
+    );
   }
 
   private isAggregateSourceElementDeleted(): boolean {
@@ -277,17 +324,25 @@ export class AggregateSourceElement {
           isDeleted = true;
           // Delete any remaining empty paths for composable entities.
           if (this.decompStrategy.isComposable()) {
-            const metadataPaths: string[] = this.getMetadataPaths(this.getMetadataFilePath());
+            const metadataPaths: string[] = this.getMetadataPaths(
+              this.getMetadataFilePath()
+            );
             if (!metadataPaths || metadataPaths.length === 0) {
-              PathUtils.cleanEmptyDirs(path.resolve(this.getMetadataFilePath(), '..'));
+              PathUtils.cleanEmptyDirs(
+                path.resolve(this.getMetadataFilePath(), '..')
+              );
             }
           }
         }
 
-        const deletedPathIsAContentPath = this.metadataType.isContentPath(deletedPath);
+        const deletedPathIsAContentPath = this.metadataType.isContentPath(
+          deletedPath
+        );
         // This would be akin to deleting an apex class .cls file.
         if (deletedPathIsAContentPath) {
-          const crucialContentStillExists = this.metadataType.mainContentFileExists(this.getMetadataFilePath());
+          const crucialContentStillExists = this.metadataType.mainContentFileExists(
+            this.getMetadataFilePath()
+          );
           if (crucialContentStillExists) {
             isDeleted = false;
           } else {
@@ -306,13 +361,24 @@ export class AggregateSourceElement {
    */
   markForDelete(): void {
     this.deleted = true;
-    const metadataPathsToDelete = this.getMetadataPaths(this.getMetadataFilePath());
-    const contentPathsToDelete = this.getContentPaths(this.getMetadataFilePath());
+    const metadataPathsToDelete = this.getMetadataPaths(
+      this.getMetadataFilePath()
+    );
+    const contentPathsToDelete = this.getContentPaths(
+      this.getMetadataFilePath()
+    );
     const allPaths = metadataPathsToDelete.concat(contentPathsToDelete);
     allPaths.forEach(deletedPath => {
-      const deletedMetadataType = MetadataTypeFactory.getMetadataTypeFromSourcePath(deletedPath, this.metadataRegistry);
-      const fullNameForPath = deletedMetadataType.getFullNameFromFilePath(deletedPath);
-      const deleteSupported = deletedMetadataType.deleteSupported(fullNameForPath);
+      const deletedMetadataType = MetadataTypeFactory.getMetadataTypeFromSourcePath(
+        deletedPath,
+        this.metadataRegistry
+      );
+      const fullNameForPath = deletedMetadataType.getFullNameFromFilePath(
+        deletedPath
+      );
+      const deleteSupported = deletedMetadataType.deleteSupported(
+        fullNameForPath
+      );
       const deletedWorkspaceElement = new WorkspaceElement(
         deletedMetadataType.getMetadataName(),
         fullNameForPath,
@@ -335,14 +401,22 @@ export class AggregateSourceElement {
   getMetadataPaths(metadataFilePath: string): string[] {
     const paths: string[] = [];
 
-    const containerPath = this.workspaceStrategy.getContainerPath(metadataFilePath, this.metadataType.getExt());
+    const containerPath = this.workspaceStrategy.getContainerPath(
+      metadataFilePath,
+      this.metadataType.getExt()
+    );
     if (!_.isNil(containerPath) && srcDevUtil.pathExistsSync(containerPath)) {
       paths.push(containerPath);
     }
 
-    const decompositionPaths = this.workspaceStrategy.findDecomposedPaths(metadataFilePath, this.metadataType.getExt());
+    const decompositionPaths = this.workspaceStrategy.findDecomposedPaths(
+      metadataFilePath,
+      this.metadataType.getExt()
+    );
     for (const decomposedSubtypeConfig of decompositionPaths.keys()) {
-      for (const decompositionPath of decompositionPaths.get(decomposedSubtypeConfig)) {
+      for (const decompositionPath of decompositionPaths.get(
+        decomposedSubtypeConfig
+      )) {
         paths.push(decompositionPath);
       }
     }
@@ -368,7 +442,10 @@ export class AggregateSourceElement {
    * @param unsupportedMimeTypes - the list of non-whitelisted static resource mime types
    * @returns {Array[]}
    */
-  commit(manifest, unsupportedMimeTypes: string[]): [string[], string[], string[]] {
+  commit(
+    manifest,
+    unsupportedMimeTypes: string[]
+  ): [string[], string[], string[]] {
     let newPaths = [];
     let updatedPaths = [];
     let deletedPaths = [];
@@ -377,11 +454,26 @@ export class AggregateSourceElement {
     this.commitDeletes(deletedPaths);
 
     if (!_.isNil(this.retrievedMetadataPath)) {
-      this.commitMetadata(newPaths, updatedPaths, deletedPaths, dupPaths, manifest);
+      this.commitMetadata(
+        newPaths,
+        updatedPaths,
+        deletedPaths,
+        dupPaths,
+        manifest
+      );
     }
 
-    if (this.metadataType.hasContent() && !_.isNil(this.retrievedContentPaths)) {
-      this.commitContent(newPaths, updatedPaths, deletedPaths, dupPaths, unsupportedMimeTypes);
+    if (
+      this.metadataType.hasContent() &&
+      !_.isNil(this.retrievedContentPaths)
+    ) {
+      this.commitContent(
+        newPaths,
+        updatedPaths,
+        deletedPaths,
+        dupPaths,
+        unsupportedMimeTypes
+      );
     }
 
     // associate committed source to sourceElement
@@ -415,8 +507,19 @@ export class AggregateSourceElement {
       });
   }
 
-  private commitMetadata(newPaths, updatedPaths, deletedPaths, dupPaths, manifest) {
-    const [newMetaPaths, updatedMetaPaths, deletedMetaPaths, dupMetaPaths] = this.decomposeMetadata(
+  private commitMetadata(
+    newPaths,
+    updatedPaths,
+    deletedPaths,
+    dupPaths,
+    manifest
+  ) {
+    const [
+      newMetaPaths,
+      updatedMetaPaths,
+      deletedMetaPaths,
+      dupMetaPaths
+    ] = this.decomposeMetadata(
       this.retrievedMetadataPath,
       this.getMetadataFilePath(),
       manifest
@@ -427,7 +530,13 @@ export class AggregateSourceElement {
     dupPaths.push(...dupMetaPaths);
   }
 
-  private commitContent(newPaths, updatedPaths, deletedPaths, dupPaths, unsupportedMimeTypes) {
+  private commitContent(
+    newPaths,
+    updatedPaths,
+    deletedPaths,
+    dupPaths,
+    unsupportedMimeTypes
+  ) {
     const [
       newContentPaths,
       updatedContentPaths,
@@ -455,7 +564,13 @@ export class AggregateSourceElement {
       );
       if (folderPath) {
         this.addWorkspaceElement(
-          new WorkspaceElement(this.getMetadataName(), this.aggregateFullName, folderPath, sourceState.NEW, true)
+          new WorkspaceElement(
+            this.getMetadataName(),
+            this.aggregateFullName,
+            folderPath,
+            sourceState.NEW,
+            true
+          )
         );
       }
     }
@@ -472,8 +587,12 @@ export class AggregateSourceElement {
         tempFilePath,
         this.metadataRegistry
       );
-      let workspaceElementFullName = workspaceElementMetadataType.getFullNameFromFilePath(tempFilePath);
-      const deleteSupported = workspaceElementMetadataType.deleteSupported(workspaceElementFullName);
+      let workspaceElementFullName = workspaceElementMetadataType.getFullNameFromFilePath(
+        tempFilePath
+      );
+      const deleteSupported = workspaceElementMetadataType.deleteSupported(
+        workspaceElementFullName
+      );
       const workspaceElement = new WorkspaceElement(
         workspaceElementMetadataType.getMetadataName(),
         workspaceElementFullName,
@@ -499,28 +618,49 @@ export class AggregateSourceElement {
    * @param forceIgnore
    * @returns {Array}
    */
-  getFilePathTranslations(mdDir, tmpDir, unsupportedMimeTypes?: string[], forceIgnore?) {
+  getFilePathTranslations(
+    mdDir,
+    tmpDir,
+    unsupportedMimeTypes?: string[],
+    forceIgnore?
+  ) {
     let filePathTranslations = [];
 
     let promise;
     if (this.metadataType.hasContent()) {
       promise = Promise.resolve()
-        .then(() => this.getContentPathTranslations(mdDir, unsupportedMimeTypes, forceIgnore))
-        .then(contentPathTranslations => (filePathTranslations = contentPathTranslations));
+        .then(() =>
+          this.getContentPathTranslations(
+            mdDir,
+            unsupportedMimeTypes,
+            forceIgnore
+          )
+        )
+        .then(
+          contentPathTranslations =>
+            (filePathTranslations = contentPathTranslations)
+        );
     } else {
       promise = Promise.resolve();
     }
 
     return promise.then(() => {
       if (this.metadataType.shouldGetMetadataTranslation()) {
-        const metadataPathTranslation = this.getMetadataPathTranslation(tmpDir, mdDir);
+        const metadataPathTranslation = this.getMetadataPathTranslation(
+          tmpDir,
+          mdDir
+        );
         filePathTranslations.push(metadataPathTranslation);
       }
       return filePathTranslations;
     });
   }
 
-  private getContentPathTranslations(mdDir: string, unsupportedMimeTypes: string[], forceIgnore) {
+  private getContentPathTranslations(
+    mdDir: string,
+    unsupportedMimeTypes: string[],
+    forceIgnore
+  ) {
     return this.metadataType
       .getOriginContentPathsForSourceConvert(
         this.getMetadataFilePath(),
@@ -536,7 +676,12 @@ export class AggregateSourceElement {
             mdDir
           );
           if (!originContentPath && this.metadataType.hasContent()) {
-            throw SfdxError.create('salesforce-alm', 'source', 'MissingComponentOrResource', [mdapiContentPath]);
+            throw SfdxError.create(
+              '@salesforce/source-deploy-retrieve',
+              'source',
+              'MissingComponentOrResource',
+              [mdapiContentPath]
+            );
           }
           return this.createTranslation(originContentPath, mdapiContentPath);
         })
@@ -548,9 +693,17 @@ export class AggregateSourceElement {
 
     // For non-decomposed metadata, use the file from the source dir. For decomposed metadata,
     // compose it to the tmpDir.
-    const composedPath = this.decompStrategy.isComposable() ? this.composeMetadata(mdFilePath, tmpDir) : null;
-    const workspacePathToMetadata = !_.isNil(composedPath) ? composedPath : mdFilePath;
-    const mdapiMetadataPath = this.metadataType.getMdapiMetadataPath(mdFilePath, this.getAggregateFullName(), mdDir);
+    const composedPath = this.decompStrategy.isComposable()
+      ? this.composeMetadata(mdFilePath, tmpDir)
+      : null;
+    const workspacePathToMetadata = !_.isNil(composedPath)
+      ? composedPath
+      : mdFilePath;
+    const mdapiMetadataPath = this.metadataType.getMdapiMetadataPath(
+      mdFilePath,
+      this.getAggregateFullName(),
+      mdDir
+    );
     return this.createTranslation(workspacePathToMetadata, mdapiMetadataPath);
   }
 
@@ -578,23 +731,39 @@ export class AggregateSourceElement {
    */
   composeMetadata(metadataFilePath: string, tmpDir: string): string {
     let container;
-    const containerPath = this.workspaceStrategy.getContainerPath(metadataFilePath, this.metadataType.getExt());
+    const containerPath = this.workspaceStrategy.getContainerPath(
+      metadataFilePath,
+      this.metadataType.getExt()
+    );
 
     if (!_.isNil(containerPath) && this.includeDecomposition(containerPath)) {
       if (!srcDevUtil.pathExistsSync(containerPath)) {
         const err = new Error();
-        const metaExtIndex = containerPath.indexOf(MetadataRegistry.getMetadataFileExt());
+        const metaExtIndex = containerPath.indexOf(
+          MetadataRegistry.getMetadataFileExt()
+        );
         const pathWithoutMetaExt = containerPath.substring(0, metaExtIndex);
-        if (srcDevUtil.pathExistsSync(pathWithoutMetaExt) && !this.metadataType.hasContent()) {
-          err['message'] = messages.getMessage('MissingMetadataExtension', [pathWithoutMetaExt, containerPath]);
+        if (
+          srcDevUtil.pathExistsSync(pathWithoutMetaExt) &&
+          !this.metadataType.hasContent()
+        ) {
+          err['message'] = messages.getMessage('MissingMetadataExtension', [
+            pathWithoutMetaExt,
+            containerPath
+          ]);
           err['name'] = 'Expected Metadata Extension';
         } else {
-          err['message'] = messages.getMessage('MissingMetadataFileWithMetaExt', containerPath);
+          err['message'] = messages.getMessage(
+            'MissingMetadataFileWithMetaExt',
+            containerPath
+          );
           err['name'] = 'Missing Metadata File';
         }
         throw err;
       } else {
-        container = this.decompStrategy.newContainerDocument(this.metadataType.getMetadataName());
+        container = this.decompStrategy.newContainerDocument(
+          this.metadataType.getMetadataName()
+        );
         try {
           container.setRepresentation(fs.readFileSync(containerPath, 'utf8'));
         } catch (e) {
@@ -603,14 +772,26 @@ export class AggregateSourceElement {
       }
     }
 
-    const decompositions = new Map<DecomposedSubtypeConfig, MetadataDocument[]>();
-    const decompositionPaths = this.workspaceStrategy.findDecomposedPaths(metadataFilePath, this.metadataType.getExt());
+    const decompositions = new Map<
+      DecomposedSubtypeConfig,
+      MetadataDocument[]
+    >();
+    const decompositionPaths = this.workspaceStrategy.findDecomposedPaths(
+      metadataFilePath,
+      this.metadataType.getExt()
+    );
     for (const decomposedSubtypeConfig of decompositionPaths.keys()) {
-      for (const decompositionPath of decompositionPaths.get(decomposedSubtypeConfig)) {
+      for (const decompositionPath of decompositionPaths.get(
+        decomposedSubtypeConfig
+      )) {
         if (this.includeDecomposition(decompositionPath)) {
-          const decomposition = this.decompStrategy.newDecompositionDocument(decomposedSubtypeConfig.metadataName);
+          const decomposition = this.decompStrategy.newDecompositionDocument(
+            decomposedSubtypeConfig.metadataName
+          );
           try {
-            decomposition.setRepresentation(fs.readFileSync(decompositionPath, 'utf8'));
+            decomposition.setRepresentation(
+              fs.readFileSync(decompositionPath, 'utf8')
+            );
           } catch (e) {
             throw checkForXmlParseError(decompositionPath, e);
           }
@@ -622,7 +803,10 @@ export class AggregateSourceElement {
       }
     }
 
-    const composed = this.decompStrategy.compose(container, decompositions);
+    const composed = this.decompStrategy.compose(
+      container,
+      decompositions
+    );
     const composedPath = this.getComposedFilePath(tmpDir);
     srcDevUtil.ensureDirectoryExistsSync(path.dirname(composedPath));
     fs.writeFileSync(composedPath, composed.getRepresentation());
@@ -635,7 +819,8 @@ export class AggregateSourceElement {
       const candidateElement = this.workspaceElements.find(
         workspaceElement =>
           workspaceElement.getSourcePath() === decompositionFilePath &&
-          (workspaceElement.getState() == sourceState.NEW || workspaceElement.getState() == sourceState.CHANGED)
+          (workspaceElement.getState() == sourceState.NEW ||
+            workspaceElement.getState() == sourceState.CHANGED)
       );
       return !_.isNil(candidateElement);
     } else {
@@ -657,7 +842,9 @@ export class AggregateSourceElement {
     metadataFilePath: string,
     manifest?
   ): [string[], string[], string[], string[]] {
-    const composed = this.decompStrategy.newComposedDocument(this.metadataType.getDecompositionConfig().metadataName);
+    const composed = this.decompStrategy.newComposedDocument(
+      this.metadataType.getDecompositionConfig().metadataName
+    );
     try {
       composed.setRepresentation(fs.readFileSync(sourceFilePath, 'utf8'));
     } catch (e) {
@@ -673,14 +860,25 @@ export class AggregateSourceElement {
       this.metadataType
     );
 
-    const documents = this.getPaths(metadataFilePath, container, decompositions);
+    const documents = this.getPaths(
+      metadataFilePath,
+      container,
+      decompositions
+    );
     const existingPaths = this.getMetadataPaths(metadataFilePath);
 
-    return this.commitStrategy.commit(documents, existingPaths, this.isDuplicate);
+    return this.commitStrategy.commit(
+      documents,
+      existingPaths,
+      this.isDuplicate
+    );
   }
 
   private getComposedFilePath(tmpDir: string) {
-    return this.metadataType.getAggregateMetadataPathInDir(tmpDir, this.getAggregateFullName());
+    return this.metadataType.getAggregateMetadataPathInDir(
+      tmpDir,
+      this.getAggregateFullName()
+    );
   }
 
   private getPaths(
@@ -689,7 +887,10 @@ export class AggregateSourceElement {
     decompositions: Map<DecomposedSubtypeConfig, MetadataDocument[]>
   ): Map<string, MetadataDocument> {
     const paths = new Map<string, MetadataDocument>();
-    const containerPath = this.workspaceStrategy.getContainerPath(metadataFilePath, this.metadataType.getExt());
+    const containerPath = this.workspaceStrategy.getContainerPath(
+      metadataFilePath,
+      this.metadataType.getExt()
+    );
     if (!_.isNil(containerPath)) {
       if (!_.isNil(container)) {
         paths.set(containerPath, container);
@@ -699,7 +900,11 @@ export class AggregateSourceElement {
     for (const decomposedSubtypeConfig of decompositions.keys()) {
       for (const decomposition of decompositions.get(decomposedSubtypeConfig)) {
         const annotation: MetadataDocumentAnnotation = decomposition.getAnnotation();
-        const sourceDir = this.getSourceDir(annotation, metadataFilePath, decomposedSubtypeConfig);
+        const sourceDir = this.getSourceDir(
+          annotation,
+          metadataFilePath,
+          decomposedSubtypeConfig
+        );
 
         /**
          * We want to ignore paths that belong to a package other than the package we're processing.
@@ -710,7 +915,10 @@ export class AggregateSourceElement {
           continue;
         }
 
-        const fileName = this.workspaceStrategy.getDecomposedFileName(annotation, decomposedSubtypeConfig);
+        const fileName = this.workspaceStrategy.getDecomposedFileName(
+          annotation,
+          decomposedSubtypeConfig
+        );
         const decomposedPath = path.join(sourceDir, fileName);
         paths.set(decomposedPath, decomposition);
       }
@@ -759,8 +967,12 @@ export class AggregateSourceElement {
    */
   private shouldIgnorePath(sourceDir: string): boolean {
     const activePackage = this.packageInfoCache.getActivePackage();
-    const activePackageName = activePackage ? activePackage.name : activePackage;
-    const pkgName = this.packageInfoCache.getPackageNameFromSourcePath(sourceDir);
+    const activePackageName = activePackage
+      ? activePackage.name
+      : activePackage;
+    const pkgName = this.packageInfoCache.getPackageNameFromSourcePath(
+      sourceDir
+    );
     return pkgName !== activePackageName;
   }
 }

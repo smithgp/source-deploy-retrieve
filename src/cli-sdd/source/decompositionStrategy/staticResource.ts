@@ -21,7 +21,7 @@ import * as PathUtil from '../sourcePathUtil';
 import { checkForXmlParseError } from '../sourceUtil';
 import { SfdxError } from '@salesforce/core';
 
-const fallBackMimeTypeExtensions = require('../mimeTypes');
+import * as fallBackMimeTypeExtensions from '../mimeTypes.json';
 const mimeTypeExtensions = require('mime/types.json');
 
 /**
@@ -57,7 +57,9 @@ export class StaticResource {
     this.usingGAWorkspace = !util.isNullOrUndefined(workspaceVersion); // TODO - once we know what the version looks like
     this.resourcesDir = path.dirname(metadataPath);
     this.fullName = this.metadataType.getFullNameFromFilePath(metadataPath);
-    const effectiveMetadataFilePath = util.isNullOrUndefined(retrievedMetadataFilePath)
+    const effectiveMetadataFilePath = util.isNullOrUndefined(
+      retrievedMetadataFilePath
+    )
       ? metadataPath
       : retrievedMetadataFilePath;
     this.mimeType = StaticResource.getMimeType(effectiveMetadataFilePath);
@@ -71,10 +73,16 @@ export class StaticResource {
         return StaticResource.zipDir(this.getExplodedFolderPath());
       } else if (srcDevUtil.pathExistsSync(this.getLegacyFilePath())) {
         return BBPromise.resolve(this.getLegacyFilePath());
-      } else if (srcDevUtil.pathExistsSync(this.getSingleFilePathPreferExisting())) {
+      } else if (
+        srcDevUtil.pathExistsSync(this.getSingleFilePathPreferExisting())
+      ) {
         return BBPromise.resolve(this.getSingleFilePathPreferExisting());
       } else {
-        return BBPromise.resolve(PathUtil.getContentPathWithNonStdExtFromMetadataPath(this.metadataPath));
+        return BBPromise.resolve(
+          PathUtil.getContentPathWithNonStdExtFromMetadataPath(
+            this.metadataPath
+          )
+        );
       }
     } else {
       if (this.usingGAWorkspace) {
@@ -89,7 +97,10 @@ export class StaticResource {
     }
   }
 
-  saveResource(sourcePath: string, createDuplicates?: boolean): [string[], string[]] {
+  saveResource(
+    sourcePath: string,
+    createDuplicates?: boolean
+  ): [string[], string[]] {
     const updatedPaths = [];
     const duplicatePaths = [];
     if (this.multiVersionHackUntilWorkspaceVersionsAreSupported) {
@@ -118,10 +129,13 @@ export class StaticResource {
   isExplodedArchive(): boolean {
     if (this.multiVersionHackUntilWorkspaceVersionsAreSupported) {
       const singleFileArchiveExists =
-        srcDevUtil.pathExistsSync(this.getSingleFilePath()) || srcDevUtil.pathExistsSync(this.getLegacyFilePath());
+        srcDevUtil.pathExistsSync(this.getSingleFilePath()) ||
+        srcDevUtil.pathExistsSync(this.getLegacyFilePath());
       return this.isArchiveMimeType() && !singleFileArchiveExists;
     } else {
-      const singleFileArchiveExists = srcDevUtil.pathExistsSync(this.getSingleFilePath());
+      const singleFileArchiveExists = srcDevUtil.pathExistsSync(
+        this.getSingleFilePath()
+      );
       return this.isArchiveMimeType() && !singleFileArchiveExists;
     }
   }
@@ -131,7 +145,9 @@ export class StaticResource {
     if (this.multiVersionHackUntilWorkspaceVersionsAreSupported) {
       if (this.isExplodedArchive()) {
         if (srcDevUtil.pathExistsSync(this.getExplodedFolderPath())) {
-          contentPaths = contentPaths.concat(this.getFiles(this.getExplodedFolderPath()));
+          contentPaths = contentPaths.concat(
+            this.getFiles(this.getExplodedFolderPath())
+          );
         }
       } else if (srcDevUtil.pathExistsSync(this.getLegacyFilePath())) {
         contentPaths.push(this.getLegacyFilePath());
@@ -145,7 +161,9 @@ export class StaticResource {
       if (this.usingGAWorkspace) {
         if (this.isExplodedArchive()) {
           if (srcDevUtil.pathExistsSync(this.getExplodedFolderPath())) {
-            contentPaths = contentPaths.concat(this.getFiles(this.getExplodedFolderPath()));
+            contentPaths = contentPaths.concat(
+              this.getFiles(this.getExplodedFolderPath())
+            );
           }
         } else {
           const contentPath = this.getSingleFilePathPreferExisting();
@@ -162,7 +180,10 @@ export class StaticResource {
   }
 
   static zipDir(dir: string): BBPromise<string> {
-    const zipFile = path.join(os.tmpdir() || '.', `sdx_srzip_${process.hrtime()[0]}${process.hrtime()[1]}.zip`);
+    const zipFile = path.join(
+      os.tmpdir() || '.',
+      `sdx_srzip_${process.hrtime()[0]}${process.hrtime()[1]}.zip`
+    );
     return srcDevUtil.zipDir(dir, zipFile, { level: 9 });
   }
 
@@ -219,7 +240,10 @@ export class StaticResource {
       const nodeTypeElement = 1;
       let child = doc.data.documentElement.firstChild;
       while (child !== null) {
-        if (child.nodeType === nodeTypeElement && child.nodeName === 'contentType') {
+        if (
+          child.nodeType === nodeTypeElement &&
+          child.nodeName === 'contentType'
+        ) {
           return child.firstChild.nodeValue;
         }
         child = child.nextSibling;
@@ -229,7 +253,10 @@ export class StaticResource {
   }
 
   private getLegacyFilePath(): string {
-    return path.join(this.resourcesDir, `${this.fullName}.${this.metadataType.getExt()}`);
+    return path.join(
+      this.resourcesDir,
+      `${this.fullName}.${this.metadataType.getExt()}`
+    );
   }
 
   private getSingleFilePath(ext?: string): string {
@@ -242,7 +269,9 @@ export class StaticResource {
   }
 
   private getSingleFilePathPreferExisting(): string {
-    const ext = this.fileExtensions.find(ext => srcDevUtil.pathExistsSync(this.getSingleFilePath(ext)));
+    const ext = this.fileExtensions.find(ext =>
+      srcDevUtil.pathExistsSync(this.getSingleFilePath(ext))
+    );
     return this.getSingleFilePath(ext);
   }
 
@@ -256,25 +285,41 @@ export class StaticResource {
     if (fallBackExtension) {
       isZip = fallBackExtension[0] === 'zip';
     }
-    return this.mimeType === mime.lookup('zip') || this.mimeType === mime.lookup('jar') || isZip;
+    return (
+      this.mimeType === mime.lookup('zip') ||
+      this.mimeType === mime.lookup('jar') ||
+      isZip
+    );
   }
 
-  private expandArchive(sourcePath: string, createDuplicates: boolean): [string[], string[]] {
+  private expandArchive(
+    sourcePath: string,
+    createDuplicates: boolean
+  ): [string[], string[]] {
     let updatedPaths = [];
     const duplicatePaths = [];
 
     // expand the archive into a temp directory
-    const tempDir = path.join(os.tmpdir(), `sfdx_staticresource_${this.fullName}_${Date.now()}`);
+    const tempDir = path.join(
+      os.tmpdir(),
+      `sfdx_staticresource_${this.fullName}_${Date.now()}`
+    );
     srcDevUtil.ensureDirectoryExistsSync(tempDir);
     try {
       new AdmZip(sourcePath).extractAllTo(tempDir);
     } catch (error) {
-      throw SfdxError.create('salesforce-alm', 'mdapi_convert', 'AdmZipError', [sourcePath, this.mimeType, error])
-        .message;
+      throw SfdxError.create(
+        '@salesforce/source-deploy-retrieve',
+        'mdapi_convert',
+        'AdmZipError',
+        [sourcePath, this.mimeType, error]
+      ).message;
     }
 
     // compare exploded directories if needed
-    let isUpdatingExistingStaticResource = srcDevUtil.pathExistsSync(this.getExplodedFolderPath());
+    let isUpdatingExistingStaticResource = srcDevUtil.pathExistsSync(
+      this.getExplodedFolderPath()
+    );
     if (isUpdatingExistingStaticResource && createDuplicates) {
       this.compareExplodedDirs(tempDir, duplicatePaths, updatedPaths);
     }
@@ -296,11 +341,20 @@ export class StaticResource {
   // if an exploded directory structure exists in the workspace then loop through each new file and see if a file
   // with same name exists in the workspace. If that file exists then compare the hashes. If hashes are different
   // then create a duplicate file.
-  private compareExplodedDirs(tempDir: string, duplicatePaths: string[], updatedPaths: string[]) {
+  private compareExplodedDirs(
+    tempDir: string,
+    duplicatePaths: string[],
+    updatedPaths: string[]
+  ) {
     srcDevUtil.actOn(tempDir, file => {
       if (!fs.statSync(file).isDirectory()) {
-        const relativePath = file.substring(file.indexOf(tempDir) + tempDir.length);
-        const workspaceFile = path.join(this.getExplodedFolderPath(), relativePath);
+        const relativePath = file.substring(
+          file.indexOf(tempDir) + tempDir.length
+        );
+        const workspaceFile = path.join(
+          this.getExplodedFolderPath(),
+          relativePath
+        );
         if (srcDevUtil.pathExistsSync(workspaceFile)) {
           if (!srcDevUtil.areFilesEqual(workspaceFile, file)) {
             // file with same name exists and contents are different
@@ -316,7 +370,10 @@ export class StaticResource {
     });
   }
 
-  private handleResource(sourcePath: string, createDuplicates: boolean): [string[], string[]] {
+  private handleResource(
+    sourcePath: string,
+    createDuplicates: boolean
+  ): [string[], string[]] {
     const updatedPaths = [];
     const duplicatePaths = [];
 
@@ -324,10 +381,16 @@ export class StaticResource {
     if (!srcDevUtil.pathExistsSync(destFile)) {
       fs.copySync(sourcePath, this.getSingleFilePathPreferExisting());
       updatedPaths.push(this.getSingleFilePathPreferExisting());
-    } else if (!srcDevUtil.areFilesEqual(sourcePath, destFile) && createDuplicates) {
+    } else if (
+      !srcDevUtil.areFilesEqual(sourcePath, destFile) &&
+      createDuplicates
+    ) {
       fs.copySync(sourcePath, `${this.getSingleFilePathPreferExisting()}.dup`);
       duplicatePaths.push(`${this.getSingleFilePathPreferExisting()}.dup`);
-    } else if (!srcDevUtil.areFilesEqual(sourcePath, destFile) && !createDuplicates) {
+    } else if (
+      !srcDevUtil.areFilesEqual(sourcePath, destFile) &&
+      !createDuplicates
+    ) {
       // replace existing file with remote
       fs.copyFile(sourcePath, this.getSingleFilePathPreferExisting());
       duplicatePaths.push(this.getSingleFilePathPreferExisting());
@@ -336,7 +399,10 @@ export class StaticResource {
     return [updatedPaths, duplicatePaths];
   }
 
-  private handleLegacyPath(sourcePath: string, createDuplicates: boolean): [string[], string[]] {
+  private handleLegacyPath(
+    sourcePath: string,
+    createDuplicates: boolean
+  ): [string[], string[]] {
     const updatedPaths = [];
     const duplicatePaths = [];
     const legacyFilePath = this.getLegacyFilePath();

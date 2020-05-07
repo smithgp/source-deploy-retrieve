@@ -12,7 +12,10 @@ export class FlowMetadataType extends DefaultMetadataType {
   getDeprecationMessage(fullName?: string) {
     if (/-[0-9]$/.test(fullName)) {
       Messages.importMessagesDirectory(__dirname);
-      const messages = Messages.loadMessages('salesforce-alm', 'source');
+      const messages = Messages.loadMessages(
+        '@salesforce/source-deploy-retrieve',
+        'source'
+      );
       return messages.getMessage('flowDeprecation');
     }
   }

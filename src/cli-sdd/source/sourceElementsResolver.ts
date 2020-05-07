@@ -11,7 +11,7 @@ import { MetadataTypeFactory } from './metadataTypeFactory';
 import { SfdxError } from '@salesforce/core';
 import * as util from 'util';
 import * as path from 'path';
-import messages = require('../../lib/messages');
+import messages = require('../messages');
 import { AggregateSourceElements } from './aggregateSourceElements';
 import { SourceWorkspaceAdapter } from './sourceWorkspaceAdapter';
 const message = messages();
@@ -29,9 +29,16 @@ export class SourceElementsResolver {
    * @param optionsManifest - path to package.xml
    * @return {Map} aggregateSourceElements
    */
-  public async getSourceElementsFromManifest(optionsManifest: any): Promise<any> {
-    const typeNamePairs = await SourceUtil.parseToManifestEntriesArray(optionsManifest);
-    return this.parseTypeNamePairs(typeNamePairs, await this.sourceWorkSpaceAdapter.getAggregateSourceElements(false));
+  public async getSourceElementsFromManifest(
+    optionsManifest: any
+  ): Promise<any> {
+    const typeNamePairs = await SourceUtil.parseToManifestEntriesArray(
+      optionsManifest
+    );
+    return this.parseTypeNamePairs(
+      typeNamePairs,
+      await this.sourceWorkSpaceAdapter.getAggregateSourceElements(false)
+    );
   }
 
   /**
@@ -55,10 +62,18 @@ export class SourceElementsResolver {
         );
 
         if (!metadataType) {
-          throw SfdxError.create('salesforce-alm', 'source', 'UnsupportedType', [keyMetadataType]);
+          throw SfdxError.create(
+            '@salesforce/source-deploy-retrieve',
+            'source',
+            'UnsupportedType',
+            [keyMetadataType]
+          );
         }
 
-        if (metadataType.getMetadataName() !== metadataType.getAggregateMetadataName()) {
+        if (
+          metadataType.getMetadataName() !==
+          metadataType.getAggregateMetadataName()
+        ) {
           // In this case we are dealing with a decomposed item, so reload using the parent name
           keyMetadataType = metadataType.getAggregateMetadataName();
         }
@@ -75,7 +90,9 @@ export class SourceElementsResolver {
                 };
               }
             );
-          aggregateSourceElements.merge(this.parseTypeNamePairs(wildcards, sourceElements));
+          aggregateSourceElements.merge(
+            this.parseTypeNamePairs(wildcards, sourceElements)
+          );
         });
       } else {
         const ase = SourceUtil.loadSourceElement(
@@ -104,19 +121,38 @@ export class SourceElementsResolver {
     tmpOutputDir = util.isNullOrUndefined(tmpOutputDir)
       ? await SourceUtil.createOutputDir('decomposition')
       : tmpOutputDir;
-    const manifestPath: string = await SourceUtil.toManifest(this.org, options, tmpOutputDir);
-    const isPathABundleError = path.extname(options.metadata).length > 0 && SourceUtil.containsMdBundle(options);
+    const manifestPath: string = await SourceUtil.toManifest(
+      this.org,
+      options,
+      tmpOutputDir
+    );
+    const isPathABundleError =
+      path.extname(options.metadata).length > 0 &&
+      SourceUtil.containsMdBundle(options);
 
     if (isPathABundleError) {
-      let err: any = SfdxError.create('salesforce-alm', 'source', 'SourcePathInvalid', [options.metadata]);
-      const sfdxError = (SfdxError.wrap(err).message = message.getMessage('PathToBundleComponenet'));
+      let err: any = SfdxError.create(
+        '@salesforce/source-deploy-retrieve',
+        'source',
+        'SourcePathInvalid',
+        [options.metadata]
+      );
+      const sfdxError = (SfdxError.wrap(err).message = message.getMessage(
+        'PathToBundleComponenet'
+      ));
       throw sfdxError;
     }
 
     if (manifestPath) {
-      aggregateSourceElements = await this.getSourceElementsFromManifest(manifestPath);
+      aggregateSourceElements = await this.getSourceElementsFromManifest(
+        manifestPath
+      );
     } else {
-      throw SfdxError.create('salesforce-alm', 'source', 'failedToCreateManifest');
+      throw SfdxError.create(
+        '@salesforce/source-deploy-retrieve',
+        'source',
+        'failedToCreateManifest'
+      );
     }
     return aggregateSourceElements;
   }

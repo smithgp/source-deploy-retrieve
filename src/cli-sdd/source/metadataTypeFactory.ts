@@ -41,7 +41,7 @@ import { WorkflowMetadataType } from './metadataTypeImpl/workflowMetadataType';
 import { SfdxError } from '@salesforce/core';
 import MetadataRegistry = require('./metadataRegistry');
 
-import Messages = require('../../lib/messages');
+import Messages = require('../messages');
 const messages = Messages();
 
 export interface FileProperty {
@@ -51,21 +51,42 @@ export interface FileProperty {
 }
 
 export class MetadataTypeFactory {
-  static getMetadataTypeFromSourcePath(sourcePath: string, metadataRegistry: MetadataRegistry): MetadataType {
-    const typeDefObj = metadataRegistry.getTypeDefinitionByFileName(sourcePath, true);
+  static getMetadataTypeFromSourcePath(
+    sourcePath: string,
+    metadataRegistry: MetadataRegistry
+  ): MetadataType {
+    const typeDefObj = metadataRegistry.getTypeDefinitionByFileName(
+      sourcePath,
+      true
+    );
     if (typeDefObj) {
-      return MetadataTypeFactory.getMetadataTypeFromMetadataName(typeDefObj.metadataName, metadataRegistry);
+      return MetadataTypeFactory.getMetadataTypeFromMetadataName(
+        typeDefObj.metadataName,
+        metadataRegistry
+      );
     }
     return null;
   }
 
-  static getMetadataTypeFromFileProperty(fileProperty: FileProperty, metadataRegistry: MetadataRegistry): MetadataType {
-    const typeDefObj = MetadataTypeFactory.getTypeDefObjFromFileProperty(fileProperty, metadataRegistry);
+  static getMetadataTypeFromFileProperty(
+    fileProperty: FileProperty,
+    metadataRegistry: MetadataRegistry
+  ): MetadataType {
+    const typeDefObj = MetadataTypeFactory.getTypeDefObjFromFileProperty(
+      fileProperty,
+      metadataRegistry
+    );
     if (!typeDefObj) {
-      const errorMessage = messages.getMessage('metadataTypeNotSupported', [fileProperty.type, fileProperty.type]);
+      const errorMessage = messages.getMessage('metadataTypeNotSupported', [
+        fileProperty.type,
+        fileProperty.type
+      ]);
       throw SfdxError.wrap(errorMessage);
     }
-    return MetadataTypeFactory.getMetadataTypeFromMetadataName(typeDefObj.metadataName, metadataRegistry);
+    return MetadataTypeFactory.getMetadataTypeFromMetadataName(
+      typeDefObj.metadataName,
+      metadataRegistry
+    );
   }
 
   /**
@@ -78,10 +99,15 @@ export class MetadataTypeFactory {
     metadataRegistry: MetadataRegistry
   ): TypeDefObj {
     const fullFileName = fileProperty.fileName;
-    const typeDefObj = metadataRegistry.getTypeDefinitionByMetadataName(fileProperty.type);
+    const typeDefObj = metadataRegistry.getTypeDefinitionByMetadataName(
+      fileProperty.type
+    );
     if (typeDefObj && typeDefObj.inFolder) {
       const metadataType = typeDefObj.metadataName.toLowerCase();
-      if (!fullFileName.endsWith(metadataType) && (metadataType === 'report' || metadataType === 'dashboard')) {
+      if (
+        !fullFileName.endsWith(metadataType) &&
+        (metadataType === 'report' || metadataType === 'dashboard')
+      ) {
         return typeDefObj.folderTypeDef;
       } else if (fileProperty.fullName.split(path.sep).length === 1) {
         return typeDefObj.folderTypeDef;
@@ -90,9 +116,17 @@ export class MetadataTypeFactory {
     return typeDefObj;
   }
 
-  static getAggregateMetadataType(metadataName: string, metadataRegistry: MetadataRegistry): MetadataType {
-    const metadataType = MetadataTypeFactory.getMetadataTypeFromMetadataName(metadataName, metadataRegistry);
-    const hasParentType = metadataType.getMetadataName() !== metadataType.getAggregateMetadataName();
+  static getAggregateMetadataType(
+    metadataName: string,
+    metadataRegistry: MetadataRegistry
+  ): MetadataType {
+    const metadataType = MetadataTypeFactory.getMetadataTypeFromMetadataName(
+      metadataName,
+      metadataRegistry
+    );
+    const hasParentType =
+      metadataType.getMetadataName() !==
+      metadataType.getAggregateMetadataName();
     if (hasParentType) {
       return MetadataTypeFactory.getMetadataTypeFromMetadataName(
         metadataType.getAggregateMetadataName(),
@@ -142,12 +176,17 @@ export class MetadataTypeFactory {
     return typeDefName;
   }
 
-  static getMetadataTypeFromMetadataName(metadataName: string, metadataRegistry: MetadataRegistry): MetadataType {
+  static getMetadataTypeFromMetadataName(
+    metadataName: string,
+    metadataRegistry: MetadataRegistry
+  ): MetadataType {
     let metadataType: MetadataType;
     const typeDefObjs = metadataRegistry.typeDefs;
     const typeDefName = MetadataTypeFactory.getTypeDefName(metadataName);
     if (metadataRegistry.isSupported(typeDefName)) {
-      const typeDefObj = metadataRegistry.getTypeDefinitionByMetadataName(typeDefName);
+      const typeDefObj = metadataRegistry.getTypeDefinitionByMetadataName(
+        typeDefName
+      );
 
       if (typeDefObj) {
         if (typeDefObj.parent) {
@@ -156,7 +195,9 @@ export class MetadataTypeFactory {
               metadataType = new CustomObjectSubtypeMetadataType(typeDefObj);
               break;
             case typeDefObjs.CustomObjectTranslation.metadataName:
-              metadataType = new CustomObjectTranslationSubtypeMetadataType(typeDefObj);
+              metadataType = new CustomObjectTranslationSubtypeMetadataType(
+                typeDefObj
+              );
               break;
             case typeDefObjs.Bot.metadataName:
               metadataType = new BotSubtypeMetadataType(typeDefObj);
@@ -170,7 +211,10 @@ export class MetadataTypeFactory {
           metadataType = new FolderMetadataType(typeDefObj);
         }
 
-        if (typeDefObj.inFolder && typeDefName !== typeDefObjs.Document.metadataName) {
+        if (
+          typeDefObj.inFolder &&
+          typeDefName !== typeDefObjs.Document.metadataName
+        ) {
           metadataType = new InFolderMetadataType(typeDefObj);
         }
 
@@ -183,7 +227,9 @@ export class MetadataTypeFactory {
               metadataType = new CustomObjectMetadataType(typeDefObj);
               break;
             case typeDefObjs.CustomObjectTranslation.metadataName:
-              metadataType = new CustomObjectTranslationMetadataType(typeDefObj);
+              metadataType = new CustomObjectTranslationMetadataType(
+                typeDefObj
+              );
               break;
             case typeDefObjs.AuraDefinitionBundle.metadataName:
               metadataType = new AuraDefinitionBundleMetadataType(typeDefObj);
@@ -195,14 +241,18 @@ export class MetadataTypeFactory {
               metadataType = new DocumentMetadataType(typeDefObj);
               break;
             case typeDefObjs.LightningComponentBundle.metadataName:
-              metadataType = new LightningComponentBundleMetadataType(typeDefObj);
+              metadataType = new LightningComponentBundleMetadataType(
+                typeDefObj
+              );
               break;
             case typeDefObjs.WaveTemplateBundle.metadataName:
               metadataType = new WaveTemplateBundleMetadataType(typeDefObj);
               break;
             case typeDefObjs.Territory2.metadataName:
             case typeDefObjs.Territory2Rule.metadataName:
-              metadataType = new Territory2AndTerritory2RuleMetadataType(typeDefObj);
+              metadataType = new Territory2AndTerritory2RuleMetadataType(
+                typeDefObj
+              );
               break;
             case typeDefObjs.Territory2Model.metadataName:
               metadataType = new Territory2ModelMetadataType(typeDefObj);
@@ -220,7 +270,9 @@ export class MetadataTypeFactory {
             case typeDefObjs.AutoResponseRules.metadataName:
             case typeDefObjs.EscalationRules.metadataName:
             case typeDefObjs.MatchingRules.metadataName:
-              metadataType = new NondecomposedTypesWithChildrenMetadataType(typeDefObj);
+              metadataType = new NondecomposedTypesWithChildrenMetadataType(
+                typeDefObj
+              );
               break;
             case typeDefObjs.Workflow.metadataName:
               metadataType = new WorkflowMetadataType(typeDefObj);
@@ -254,19 +306,26 @@ export class MetadataTypeFactory {
     return metadataType;
   }
 
-  static getMetadataTypeFromMdapiPackagePath(packagePath: string, metadataRegistry: MetadataRegistry): MetadataType {
+  static getMetadataTypeFromMdapiPackagePath(
+    packagePath: string,
+    metadataRegistry: MetadataRegistry
+  ): MetadataType {
     const pathElements = packagePath.split(path.sep); // ["type-dir", ["container-dir",]] "file"
     let isFolderType: boolean;
     if (pathElements.length > 1) {
       // file level (or intermediate directory for a few types)
       const type = pathElements[0];
       const file = pathElements[pathElements.length - 1];
-      const possibleTypeDefs = metadataRegistry.getTypeDefinitionsByDirectoryName(type);
+      const possibleTypeDefs = metadataRegistry.getTypeDefinitionsByDirectoryName(
+        type
+      );
       let typeDef;
       if (possibleTypeDefs.length === 1) {
         typeDef = possibleTypeDefs[0];
       } else {
-        const inFolderType = possibleTypeDefs.find(_typeDef => _typeDef.inFolder);
+        const inFolderType = possibleTypeDefs.find(
+          _typeDef => _typeDef.inFolder
+        );
         if (inFolderType) {
           isFolderType = inFolderType && pathElements.length === 2;
           if (isFolderType) {
@@ -288,18 +347,25 @@ export class MetadataTypeFactory {
       // Territory2 and Territory2Rule exist in the Territory2Model directory, but they are separate entities
       // so we need to reload the typeDef accordingly
       const isTerritory2Model =
-        typeDef && typeDef.metadataName === metadataRegistry.typeDefs.Territory2Model.metadataName;
+        typeDef &&
+        typeDef.metadataName ===
+          metadataRegistry.typeDefs.Territory2Model.metadataName;
       if (isTerritory2Model && pathElements.length === 4) {
         // length of 4 signals a subtype of territory2Model
         const terrType = pathElements[2];
-        if (terrType === metadataRegistry.typeDefs.Territory2.defaultDirectory) {
+        if (
+          terrType === metadataRegistry.typeDefs.Territory2.defaultDirectory
+        ) {
           typeDef = metadataRegistry.typeDefs.Territory2;
         } else {
           typeDef = metadataRegistry.typeDefs.Territory2Rule;
         }
       }
 
-      return MetadataTypeFactory.getMetadataTypeFromMetadataName(typeDef.metadataName, metadataRegistry);
+      return MetadataTypeFactory.getMetadataTypeFromMetadataName(
+        typeDef.metadataName,
+        metadataRegistry
+      );
     }
     return null;
   }

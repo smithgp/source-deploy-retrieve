@@ -11,7 +11,10 @@ import { Messages } from '@salesforce/core';
 export class FlowDefinitionMetadataType extends DefaultMetadataType {
   getDeprecationMessage() {
     Messages.importMessagesDirectory(__dirname);
-    const messages = Messages.loadMessages('salesforce-alm', 'source');
+    const messages = Messages.loadMessages(
+      '@salesforce/source-deploy-retrieve',
+      'source'
+    );
     return messages.getMessage('flowDefinitionDeprecation');
   }
 }

@@ -40,10 +40,11 @@ import MdapiDeployApi = require('../mdapi/mdapiDeployApi');
 import { set } from '@salesforce/kit';
 import { AuthInfo } from '@salesforce/core';
 
-const defaultConnectedAppInfo = require('./defaultConnectedApp');
+import * as defaultConnectedAppInfo from './defaultConnectedApp.json';
 import Messages = require('../messages');
 const messages = Messages();
-const urls = require('../urls');
+// const urls = require('../urls');
+import * as urls from '../urls.json';
 const fs = BBPromise.promisifyAll(require('fs'));
 
 const _buildNoOrgError = org => {
@@ -55,9 +56,17 @@ const _buildNoOrgError = org => {
   const noConfigError = new Error(message);
   noConfigError.name = 'NoOrgFound';
   if (org.type === SfdxConfig.OrgDefaults.USERNAME) {
-    set(noConfigError, 'action', messages.getMessage('defaultOrgNotFoundAction'));
+    set(
+      noConfigError,
+      'action',
+      messages.getMessage('defaultOrgNotFoundAction')
+    );
   } else if (org.type === SfdxConfig.OrgDefaults.DEVHUB) {
-    set(noConfigError, 'action', messages.getMessage('defaultOrgNotFoundDevHubAction'));
+    set(
+      noConfigError,
+      'action',
+      messages.getMessage('defaultOrgNotFoundDevHubAction')
+    );
   }
   return noConfigError;
 };
@@ -74,7 +83,11 @@ class StateFile {
   [property: string]: any;
 
   constructor(config, filePath, contents = {}) {
-    this.path = path.join(config.getProjectPath(), srcDevUtil.getWorkspaceStateFolderName(), filePath);
+    this.path = path.join(
+      config.getProjectPath(),
+      srcDevUtil.getWorkspaceStateFolderName(),
+      filePath
+    );
     this.backupPath = `${this.path}.bak`;
     this.contents = contents;
   }
@@ -158,7 +171,8 @@ class StateFile {
 const _localOrgMetaConfigsReduction = function(metaConfigs) {
   return metaConfigs.reduce((accum, currentValue) => {
     // Initialize the map to store scratchOrgInfos across all locally configured devHubs
-    accum.mergedScratchOrgInfosAcrossLocalDevHubs = accum.mergedScratchOrgInfosAcrossLocalDevHubs || new Map();
+    accum.mergedScratchOrgInfosAcrossLocalDevHubs =
+      accum.mergedScratchOrgInfosAcrossLocalDevHubs || new Map();
 
     // Place to store locally authenticated orgs. drawing a distinction here of: {scratchOrg, devHub, non ScratchOrg
     accum.orgs = accum.orgs || [];
@@ -166,11 +180,17 @@ const _localOrgMetaConfigsReduction = function(metaConfigs) {
     // devhubs have ScratchOrgInfo objects keyed by username. Need to consolidate down to one map. The third index
     // of current value will contain devHub member data. an error object otherwise.
     if (_.isError(currentValue[2])) {
+      //@ts-ignore
       if (currentValue[2].errorCode === 'INVALID_TYPE') {
         // Invalid type means we connected and there is not an sobject ScratchOrgInfo
         currentValue[1].connectedStatus = 'Connected';
       } else {
-        currentValue[1].connectedStatus = currentValue[2].code || currentValue[2].errorCode || currentValue[2].name;
+        currentValue[1].connectedStatus =
+          //@ts-ignore
+          currentValue[2].code ||
+          //@ts-ignore
+          currentValue[2].errorCode ||
+          currentValue[2].name;
       }
     }
     // Not nil and not an error it must be a hub org.
@@ -214,7 +234,10 @@ const _identifyDefaultOrgs = function(orgMeta, _defaultOrgs) {
  * @param {string[]} properties - properties to exclude ex ['refreshToken', 'clientSecret']
  * @returns the config less the sensitive information.
  */
-const _removeRestrictedInfoFromConfig = function(config, properties = ['refreshToken', 'clientSecret']) {
+const _removeRestrictedInfoFromConfig = function(
+  config,
+  properties = ['refreshToken', 'clientSecret']
+) {
   return _.omit(config, properties);
 };
 
@@ -225,7 +248,11 @@ const _removeRestrictedInfoFromConfig = function(config, properties = ['refreshT
  * @param {string[]} excludeProperties - properties to exclude from the grouped configs ex. ['refreshToken', 'clientSecret']
  * @private
  */
-const _groupOrgs = async function(configsAcrossDevHubs, orgClass, excludeProperties) {
+const _groupOrgs = async function(
+  configsAcrossDevHubs,
+  orgClass,
+  excludeProperties
+) {
   const self = this;
   const _accum = {};
 
@@ -251,11 +278,17 @@ const _groupOrgs = async function(configsAcrossDevHubs, orgClass, excludePropert
       .catch(() => null)
   ]).then(defaultOrgs =>
     configsAcrossDevHubs.orgs.reduce((accum, _currentValue) => {
-      const currentValue = _removeRestrictedInfoFromConfig(_currentValue, excludeProperties);
+      const currentValue = _removeRestrictedInfoFromConfig(
+        _currentValue,
+        excludeProperties
+      );
 
       _identifyDefaultOrgs.call(self, currentValue, defaultOrgs);
 
-      const info = configsAcrossDevHubs.mergedScratchOrgInfosAcrossLocalDevHubs.get(currentValue.username);
+      const info = configsAcrossDevHubs.mergedScratchOrgInfosAcrossLocalDevHubs.get(
+        //@ts-ignore
+        currentValue.username
+      );
 
       // This means we found a scratchOrgInfo object from some dev hub so we can get the status.
       if (!_.isNil(info)) {
@@ -264,18 +297,30 @@ const _groupOrgs = async function(configsAcrossDevHubs, orgClass, excludePropert
 
         // Note that the info object contains a devHubUsername reference. It will be merged in/over.
         // This will ensure if we lose contact with a devHub we can determine this is a scratchOrg.
-        accum.scratchOrgs.set(currentValue.username, _.merge(currentValue, info));
+        accum.scratchOrgs.set(
+          //@ts-ignore
+          currentValue.username,
+          _.merge(currentValue, info)
+        );
+        //@ts-ignore
       } else if (currentValue.devHubUsername) {
         // In this scenario there was no hit on this org as it pertains to being a member of a devhub. But this org
         // was tagged as a scratch org during either a local create:org command or a previous invocation of the
         // list command. The org could have been deleted after the last time org:list was executed.
+        //@ts-ignore
         currentValue.isMissing = true;
-        accum.scratchOrgs.set(currentValue.username, _.merge(currentValue, info));
+        accum.scratchOrgs.set(
+          //@ts-ignore
+          currentValue.username,
+          _.merge(currentValue, info)
+        );
       } else {
+        //@ts-ignore
         accum.nonScratchOrgs.set(currentValue.username, currentValue);
       }
-
+      //@ts-ignore
       if (currentValue.isDevHub) {
+        //@ts-ignore
         accum.devHubs.set(currentValue.username, currentValue);
       }
 
@@ -300,7 +345,9 @@ const _updateOrgIndicators = function(groupedOrgs, _orgUpdate) {
       // by some remote chance we cannot update the cache value for isDevHub it's not the end of the world. If
       // there is a large number of orgs the performance could be slower each time the command is invoked. Putting a
       // warning in the log is appropriate.
-      this.logger.warn(`error writing files: ${err.message} stack: ${err.stack}`);
+      this.logger.warn(
+        `error writing files: ${err.message} stack: ${err.stack}`
+      );
     })
     .then(() => groupedOrgs);
 };
@@ -344,7 +391,9 @@ class Org {
   retrieveMaxApiVersion() {
     // getting the max api version does not require auth. So if you think adding a call to refreshAuth here is the correct
     // thing to do. it's not!
-    return this.force.getApiVersions(this).then(versions => _.maxBy(versions, (_ver: any) => _ver.version));
+    return this.force
+      .getApiVersions(this)
+      .then(versions => _.maxBy(versions, (_ver: any) => _ver.version));
   }
   /**
    * Gets the name of this scratch org.
@@ -444,8 +493,12 @@ class Org {
           .map(file => path.join(dirPath, file))
           .map(filePath => ({ filePath, stat: fs.statSync(filePath) }));
 
-        stats.filter(({ stat }) => stat.isDirectory()).forEach(({ filePath }) => removeDir(filePath));
-        stats.filter(({ stat }) => stat.isFile()).forEach(({ filePath }) => fs.unlinkSync(filePath));
+        stats
+          .filter(({ stat }) => stat.isDirectory())
+          .forEach(({ filePath }) => removeDir(filePath));
+        stats
+          .filter(({ stat }) => stat.isFile())
+          .forEach(({ filePath }) => fs.unlinkSync(filePath));
 
         fs.rmdirSync(dirPath);
       } catch (err) {
@@ -480,7 +533,10 @@ class Org {
    * @returns {*}
    */
   getMetadataTypeInfos() {
-    return new StateFile(this.config, this.getDataPath('metadataTypeInfos.json'));
+    return new StateFile(
+      this.config,
+      this.getDataPath('metadataTypeInfos.json')
+    );
   }
 
   /**
@@ -498,7 +554,8 @@ class Org {
         // The username of the org can be set by the username config var, env var, or command line.
         // If the username is not set, getName will resolve to the default username for the workspace.
         // If the username is an access token, use that instead of getting the username auth file.
-        const accessTokenMatch = _.isString(username) && username.match(/^(00D\w{12,15})![\.\w]*$/);
+        const accessTokenMatch =
+          _.isString(username) && username.match(/^(00D\w{12,15})![\.\w]*$/);
 
         if (accessTokenMatch) {
           let instanceUrl;
@@ -511,7 +568,8 @@ class Org {
           if (sfdxConfig.getInfo('instanceUrl').isEnvVar()) {
             instanceUrl = sfdxConfig.getPropertyValue('instanceUrl');
           } else {
-            instanceUrl = sfdxConfig.getPropertyValue('instanceUrl') || urls.production;
+            instanceUrl =
+              sfdxConfig.getPropertyValue('instanceUrl') || urls.production;
           }
 
           // If the username isn't an email, is it as a accessToken
@@ -523,11 +581,14 @@ class Org {
         } else {
           return srcDevUtil
             .getGlobalConfig(`${username}.json`)
-            .then(config => configValidator.getCleanObject(config, orgConfigAttributes, false))
+            .then(config =>
+              configValidator.getCleanObject(config, orgConfigAttributes, false)
+            )
             .then(config => {
               if (_.isNil(config.clientId)) {
                 config.clientId = defaultConnectedAppInfo.legacyClientId;
-                config.clientSecret = defaultConnectedAppInfo.legacyClientSecret;
+                config.clientSecret =
+                  defaultConnectedAppInfo.legacyClientSecret;
               }
               return config;
             })
@@ -580,7 +641,10 @@ class Org {
 
           // We only want to delete the default if it is in the local or global
           // config file. i.e. we can't delete an env var.
-          if ((info.value === name || info.value === alias) && (info.isGlobal() || info.isLocal())) {
+          if (
+            (info.value === name || info.value === alias) &&
+            (info.isGlobal() || info.isLocal())
+          ) {
             // Pass in undefined to unset it
             return SfdxConfig.set(info.isGlobal(), this.type);
           }
@@ -606,7 +670,9 @@ class Org {
         return usernames;
       })
       .then(usernames => {
-        this.logger.info(`Cleaning up usernames: ${usernames} in org: ${this.authConfig.orgId}`);
+        this.logger.info(
+          `Cleaning up usernames: ${usernames} in org: ${this.authConfig.orgId}`
+        );
         return BBPromise.all(usernames.map(username => cleanup(username)));
       })
       .then(() => Alias.unset(aliases))
@@ -714,10 +780,14 @@ class Org {
               // If no results, org is not associated with the devhub
               if (_.get(results, 'records.length') !== 1) {
                 return hubOrg.getConfig().then(hubConfig => {
-                  throw almError({ keyName: 'notFoundOnDevHub', bundle: 'generatePassword' }, [hubConfig.username], {
-                    keyName: 'action',
-                    bundle: 'generatePassword'
-                  });
+                  throw almError(
+                    { keyName: 'notFoundOnDevHub', bundle: 'generatePassword' },
+                    [hubConfig.username],
+                    {
+                      keyName: 'action',
+                      bundle: 'generatePassword'
+                    }
+                  );
                 });
               }
               return BBPromise.resolve(config);
@@ -725,10 +795,14 @@ class Org {
             .catch(err => {
               if (err.name === 'INVALID_TYPE') {
                 return hubOrg.getConfig().then(hubConfig => {
-                  throw almError({ keyName: 'notADevHub', bundle: 'generatePassword' }, [hubConfig.username], {
-                    keyName: 'action',
-                    bundle: 'generatePassword'
-                  });
+                  throw almError(
+                    { keyName: 'notADevHub', bundle: 'generatePassword' },
+                    [hubConfig.username],
+                    {
+                      keyName: 'action',
+                      bundle: 'generatePassword'
+                    }
+                  );
                 });
               }
               throw err;
@@ -761,7 +835,9 @@ class Org {
       settings
         .createDeployDir(apiVersion)
         // Package it all up and send to the scratch org
-        .then(deploydir => this.mdDeploy.deploy(Object.assign(options, { deploydir })))
+        .then(deploydir =>
+          this.mdDeploy.deploy(Object.assign(options, { deploydir }))
+        )
         .catch(err => {
           this.mdDeploy._reporter._printComponentFailures(err.result);
           return BBPromise.reject(almError('ProblemDeployingSettings'));
@@ -774,7 +850,9 @@ class Org {
    *  @returns {Object} - The contents of the org file, or an empty object if not found.
    */
   readOrgFile() {
-    return this.getConfig().then(orgData => srcDevUtil.getGlobalConfig(`${orgData.orgId}.json`, {}));
+    return this.getConfig().then(orgData =>
+      srcDevUtil.getGlobalConfig(`${orgData.orgId}.json`, {})
+    );
   }
 
   /**
@@ -857,7 +935,9 @@ class Org {
    */
   static readAllUserFilenames() {
     return fs.readdirAsync(srcDevUtil.getGlobalHiddenFolder()).then(files => {
-      const sfdxFiles = files.filter(file => file.match(Org.getAuthFilenameFilterRegEx()));
+      const sfdxFiles = files.filter(file =>
+        file.match(Org.getAuthFilenameFilterRegEx())
+      );
       // Want to throw a clean error if no files are found.
       if (_.isEmpty(sfdxFiles)) {
         throw almError(
@@ -883,7 +963,9 @@ class Org {
    */
   static readMapOfLocallyValidatedMetaConfig(userFilenames, concurrency = 3) {
     if (concurrency < 1) {
-      return BBPromise.reject(new Error('concurrency setting must be greater than zero.'));
+      return BBPromise.reject(
+        new Error('concurrency setting must be greater than zero.')
+      );
     }
 
     const orgInfo = new OrgInfo();
@@ -894,7 +976,10 @@ class Org {
 
     const fileDoesntExistFilter = BBPromise.all(
       _.map(userFilenames, fileName => {
-        const filePath = path.join(srcDevUtil.getGlobalHiddenFolder(), fileName);
+        const filePath = path.join(
+          srcDevUtil.getGlobalHiddenFolder(),
+          fileName
+        );
         return BBPromise.all([
           fs
             .statAsync(filePath)
@@ -948,7 +1033,11 @@ class Org {
                     return org
                       .refreshAuth()
                       .catch(err => {
-                        org.logger.trace(`error refreshing auth for org: ${configData.username}`);
+                        org.logger.trace(
+                          `error refreshing auth for org: ${
+                            configData.username
+                          }`
+                        );
                         org.logger.trace(err);
                         return err;
                       })
@@ -956,11 +1045,16 @@ class Org {
                         if (_.isError(result)) {
                           return result;
                         }
-                        return orgInfo.retrieveScratchOrgInfosWhereInOrgIds(org, orgIds15);
+                        return orgInfo.retrieveScratchOrgInfosWhereInOrgIds(
+                          org,
+                          orgIds15
+                        );
                       })
                       .catch(err => {
                         org.logger.trace(
-                          `error retrieving ScratchOrgInfo object for org: ${configData.username}. this is expected for non-devhubs`
+                          `error retrieving ScratchOrgInfo object for org: ${
+                            configData.username
+                          }. this is expected for non-devhubs`
                         );
                         org.logger.trace(err);
                         return err;
@@ -978,7 +1072,9 @@ class Org {
             return BBPromise.all([
               fileContentAndMeta[0],
               fileContentAndMeta[1],
-              promiseDevHubMetadata(fileContentAndMeta[1].username).catch(() => null)
+              promiseDevHubMetadata(fileContentAndMeta[1].username).catch(
+                () => null
+              )
             ]);
           },
 
@@ -996,7 +1092,11 @@ class Org {
    * the scratchOrgInfo query.
    * @param {string[]|null} excludeProperties - properties to exclude from the configs defaults. ['refreshToken', 'clientSecret']. Specify null to include all properties.
    */
-  static readLocallyValidatedMetaConfigsGroupedByOrgType(userFilenames, concurrency = 3, excludeProperties?) {
+  static readLocallyValidatedMetaConfigsGroupedByOrgType(
+    userFilenames,
+    concurrency = 3,
+    excludeProperties?
+  ) {
     return Org.readMapOfLocallyValidatedMetaConfig(userFilenames, concurrency)
       .then(configsAcrossDevHubs =>
         Alias.list().then(aliases => {
@@ -1007,12 +1107,19 @@ class Org {
         })
       )
       .then(configsAcrossDevHubsWithAlias =>
-        _groupOrgs.call(new Config(), configsAcrossDevHubsWithAlias, Org, excludeProperties)
+        _groupOrgs.call(
+          new Config(),
+          configsAcrossDevHubsWithAlias,
+          Org,
+          excludeProperties
+        )
       )
       .then(groupedOrgs =>
         _updateOrgIndicators.call(
           {
-            logger: logger.child('readLocallyValidatedMetaConfigGroupdByOrgType')
+            logger: logger.child(
+              'readLocallyValidatedMetaConfigGroupdByOrgType'
+            )
           },
           groupedOrgs,
           (meta, attributesToMerge) => {
@@ -1026,7 +1133,9 @@ class Org {
                 if (!_.isNil(attributesToMerge)) {
                   const matcher = _.matches(attributesToMerge);
                   if (!matcher(configData)) {
-                    return org.saveConfig(_.merge(configData, attributesToMerge));
+                    return org.saveConfig(
+                      _.merge(configData, attributesToMerge)
+                    );
                   }
                 }
                 return null;
@@ -1048,12 +1157,17 @@ class Org {
         val.status = 'Expired';
       }
 
-      const devHub = !_.isNil(val.devHubUsername) ? devHubs.get(val.devHubUsername) : null;
+      const devHub = !_.isNil(val.devHubUsername)
+        ? devHubs.get(val.devHubUsername)
+        : null;
       // this means we know we have a scratch org, but no dev hub is providing ownership.
       // the org is likely gone. this could also mean the dev hub this auth file is
       // associated with hasn't been locally authorized.
       if (val.isMissing) {
-        val.status = _.isNil(val.devHubUsername) || _.isNil(devHub) ? 'Unknown' : 'Missing';
+        val.status =
+          _.isNil(val.devHubUsername) || _.isNil(devHub)
+            ? 'Unknown'
+            : 'Missing';
       }
     }
   }
@@ -1071,7 +1185,9 @@ class Org {
       const verbose = srcDevUtil.isVerbose();
       if (_.isString(actualUsername) && !_.isEmpty(actualUsername)) {
         if (verbose) {
-          logger.log(`Using resolved username ${actualUsername} from alias ${username}${logger.getEOL()}`);
+          logger.log(
+            `Using resolved username ${actualUsername} from alias ${username}${logger.getEOL()}`
+          );
         }
 
         org.alias = username;

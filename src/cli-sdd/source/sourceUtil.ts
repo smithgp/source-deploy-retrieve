@@ -13,7 +13,13 @@ import * as os from 'os';
 import { isNil, get as _get } from 'lodash';
 import { AggregateSourceElement } from './aggregateSourceElement';
 import { MetadataTypeFactory } from './metadataTypeFactory';
-import { SfdxError, SfdxErrorConfig, fs, Logger, Messages } from '@salesforce/core';
+import {
+  SfdxError,
+  SfdxErrorConfig,
+  fs,
+  Logger,
+  Messages
+} from '@salesforce/core';
 import { MdRetrieveApi } from '../mdapi/mdapiRetrieveApi';
 import { MetadataType } from './metadataType';
 import { InFolderMetadataType } from './metadataTypeImpl/inFolderMetadataType';
@@ -39,7 +45,10 @@ Messages.importMessagesDirectory(__dirname);
  * @param flags The command parameters (aka flags)
  * @param minWaitTime The minimum allowable time to wait
  */
-export const parseWaitParam = (flags: { wait?: string }, minWaitTime: number = consts.MIN_SRC_WAIT_MINUTES) => {
+export const parseWaitParam = (
+  flags: { wait?: string },
+  minWaitTime: number = consts.MIN_SRC_WAIT_MINUTES
+) => {
   if (!isNil(flags.wait)) {
     if (srcDevUtil.isInt(flags.wait)) {
       const wait = (flags.wait = parseInt(flags.wait, 10) as any); // convert to a number
@@ -48,7 +57,11 @@ export const parseWaitParam = (flags: { wait?: string }, minWaitTime: number = c
       }
     }
 
-    const errConfig = new SfdxErrorConfig('salesforce-alm', 'source', 'mdapiCliInvalidNumericParam');
+    const errConfig = new SfdxErrorConfig(
+      '@salesforce/source-deploy-retrieve',
+      'source',
+      'mdapiCliInvalidNumericParam'
+    );
     errConfig.setErrorTokens(['wait']);
     throw SfdxError.create(errConfig);
   }
@@ -59,9 +72,16 @@ export const parseWaitParam = (flags: { wait?: string }, minWaitTime: number = c
  * @param orgName The username of the org for doing the source:deploy or source:retrieve
  * @param errAction The action ('push' or 'pull') to take when the org is discovered to be a source tracked org.
  */
-export const validateNonSourceTrackedOrg = async (orgName: string, errAction: string) => {
+export const validateNonSourceTrackedOrg = async (
+  orgName: string,
+  errAction: string
+) => {
   if (await srcDevUtil.isSourceTrackedOrg(orgName)) {
-    const errConfig = new SfdxErrorConfig('salesforce-alm', 'source', 'SourceTrackedOrgError');
+    const errConfig = new SfdxErrorConfig(
+      '@salesforce/source-deploy-retrieve',
+      'source',
+      'SourceTrackedOrgError'
+    );
     errConfig.addAction('SourceTrackedOrgErrorAction', [errAction]);
     throw SfdxError.create(errConfig);
   }
@@ -75,7 +95,12 @@ export const validateManifestPath = async (manifestPath: string) => {
   try {
     await fs.access(manifestPath, fs.constants.R_OK);
   } catch (e) {
-    throw SfdxError.create('salesforce-alm', 'source', 'InvalidManifestError', [manifestPath]);
+    throw SfdxError.create(
+      '@salesforce/source-deploy-retrieve',
+      'source',
+      'InvalidManifestError',
+      [manifestPath]
+    );
   }
 };
 
@@ -99,14 +124,22 @@ export async function cleanupOutputDir(outputDir: string): Promise<void> {
         }
       } catch (err) {
         if (err.code !== 'ENOENT') {
-          logger.warn(`Could not delete the MDAPI temporary zip file ${outputDir}.zip due to: ${err.message}`);
+          logger.warn(
+            `Could not delete the MDAPI temporary zip file ${outputDir}.zip due to: ${
+              err.message
+            }`
+          );
         }
       }
     } catch (err) {
-      logger.warn(`Could not delete the outputDir '${outputDir}' due to: ${err.message}`);
+      logger.warn(
+        `Could not delete the outputDir '${outputDir}' due to: ${err.message}`
+      );
     }
   } else {
-    logger.warn(`Did not delete the outputDir '${outputDir}' because it was set by the user`);
+    logger.warn(
+      `Did not delete the outputDir '${outputDir}' because it was set by the user`
+    );
   }
 }
 
@@ -124,16 +157,24 @@ export const getSourceElementForFile = async function(
   let aggregateSourceElement: AggregateSourceElement;
   const mdRegistry = sourceWorkspaceAdapter.metadataRegistry;
   const sourceElementMetadataType =
-    metadataType || MetadataTypeFactory.getMetadataTypeFromSourcePath(sourcePath, mdRegistry);
+    metadataType ||
+    MetadataTypeFactory.getMetadataTypeFromSourcePath(sourcePath, mdRegistry);
 
   if (sourceElementMetadataType) {
     // This will build an AggregateSourceElement with only the specified WorkspaceElement
     // (child element) when the metadata type has a parent.
-    const _sourcePath = _get(sourceElementMetadataType, 'typeDefObj.parent') ? sourcePath : path.dirname(sourcePath);
+    const _sourcePath = _get(sourceElementMetadataType, 'typeDefObj.parent')
+      ? sourcePath
+      : path.dirname(sourcePath);
 
     const aggregateMetadataName = sourceElementMetadataType.getAggregateMetadataName();
-    const aggregateFullName = sourceElementMetadataType.getAggregateFullNameFromFilePath(sourcePath);
-    const key = AggregateSourceElement.getKeyFromMetadataNameAndFullName(aggregateMetadataName, aggregateFullName);
+    const aggregateFullName = sourceElementMetadataType.getAggregateFullNameFromFilePath(
+      sourcePath
+    );
+    const key = AggregateSourceElement.getKeyFromMetadataNameAndFullName(
+      aggregateMetadataName,
+      aggregateFullName
+    );
 
     // Get the AggregateSourceElement, which will only populate with the specified WorkspaceElement
     // when sourcePath is part of an ASE.
@@ -143,10 +184,22 @@ export const getSourceElementForFile = async function(
       undefined,
       _sourcePath
     );
-    const packageName = sourceWorkspaceAdapter.packageInfoCache.getPackageNameFromSourcePath(sourcePath);
-    aggregateSourceElement = loadSourceElement(sourceElements, key, mdRegistry, packageName);
+    const packageName = sourceWorkspaceAdapter.packageInfoCache.getPackageNameFromSourcePath(
+      sourcePath
+    );
+    aggregateSourceElement = loadSourceElement(
+      sourceElements,
+      key,
+      mdRegistry,
+      packageName
+    );
   } else {
-    throw SfdxError.create('salesforce-alm', 'source', 'SourcePathInvalid', [sourcePath]);
+    throw SfdxError.create(
+      '@salesforce/source-deploy-retrieve',
+      'source',
+      'SourcePathInvalid',
+      [sourcePath]
+    );
   }
 
   return aggregateSourceElement;
@@ -170,12 +223,20 @@ export const getSourceElementsFromSourcePath = async function(
     try {
       await fs.access(sourcepath, fs.constants.R_OK);
     } catch (e) {
-      throw SfdxError.create('salesforce-alm', 'source', 'SourcePathInvalid', [sourcepath]);
+      throw SfdxError.create(
+        '@salesforce/source-deploy-retrieve',
+        'source',
+        'SourcePathInvalid',
+        [sourcepath]
+      );
     }
 
     // Get the MetadataType so we can resolve the path.  Some paths such as individual static
     // resources need to use a different path when getting source elements.
-    const metadataType = MetadataTypeFactory.getMetadataTypeFromSourcePath(sourcepath, mdRegistry);
+    const metadataType = MetadataTypeFactory.getMetadataTypeFromSourcePath(
+      sourcepath,
+      mdRegistry
+    );
 
     if (metadataType) {
       sourcepath = metadataType.resolveSourcePath(sourcepath);
@@ -204,7 +265,10 @@ export const getSourceElementsFromSourcePath = async function(
         aggregateSourceElements.setIn(pkg, aseKey, ase);
       }
     } else {
-      const sourceElementsInPath = await getSourceElementsInPath(sourcepath, sourceWorkspaceAdapter);
+      const sourceElementsInPath = await getSourceElementsInPath(
+        sourcepath,
+        sourceWorkspaceAdapter
+      );
       aggregateSourceElements.merge(sourceElementsInPath);
     }
   }
@@ -235,25 +299,52 @@ export const loadSourceElement = function(
     let [mdType, ...rest] = key.split('__');
     const mdName = rest.join('__');
 
-    const metadataType = MetadataTypeFactory.getMetadataTypeFromMetadataName(mdType, metadataRegistry);
+    const metadataType = MetadataTypeFactory.getMetadataTypeFromMetadataName(
+      mdType,
+      metadataRegistry
+    );
     if (!metadataType) {
-      throw SfdxError.create('salesforce-alm', 'source', 'MetadataTypeDoesNotExist', [mdType]);
+      throw SfdxError.create(
+        '@salesforce/source-deploy-retrieve',
+        'source',
+        'MetadataTypeDoesNotExist',
+        [mdType]
+      );
     }
-    const hasParentType = metadataType.getMetadataName() !== metadataType.getAggregateMetadataName();
+    const hasParentType =
+      metadataType.getMetadataName() !==
+      metadataType.getAggregateMetadataName();
     if (hasParentType) {
       //In this case, we are dealing with a decomposed subtype, so need to check for a parent
       const parentName = metadataType.getAggregateMetadataName();
-      const parentMetadataType = MetadataTypeFactory.getAggregateMetadataType(parentName, metadataRegistry);
-      const parentFullName = metadataType.getAggregateFullNameFromWorkspaceFullName(mdName);
+      const parentMetadataType = MetadataTypeFactory.getAggregateMetadataType(
+        parentName,
+        metadataRegistry
+      );
+      const parentFullName = metadataType.getAggregateFullNameFromWorkspaceFullName(
+        mdName
+      );
       const newKey = AggregateSourceElement.getKeyFromMetadataNameAndFullName(
         parentMetadataType.getAggregateMetadataName(),
         parentFullName
       );
-      return loadSourceElement(sourceElements, newKey, metadataRegistry, packageName);
+      return loadSourceElement(
+        sourceElements,
+        newKey,
+        metadataRegistry,
+        packageName
+      );
     } else if (metadataType instanceof InFolderMetadataType) {
       mdType = MdapiPackage.convertFolderTypeKey(mdType);
-      return loadSourceElement(sourceElements, `${mdType}__${mdName}`, metadataRegistry, packageName);
-    } else if (metadataType instanceof NondecomposedTypesWithChildrenMetadataType) {
+      return loadSourceElement(
+        sourceElements,
+        `${mdType}__${mdName}`,
+        metadataRegistry,
+        packageName
+      );
+    } else if (
+      metadataType instanceof NondecomposedTypesWithChildrenMetadataType
+    ) {
       const mdType = metadataType.getMetadataName();
       let name = `${mdType}__${mdName.split('.')[0]}`;
 
@@ -263,9 +354,18 @@ export const loadSourceElement = function(
         // it will deploy all CustomLabels, regardless of what is specified in the manifest
         name = `${mdType}__${mdType}`;
       }
-      return loadSourceElement(sourceElements, name, metadataRegistry, packageName);
+      return loadSourceElement(
+        sourceElements,
+        name,
+        metadataRegistry,
+        packageName
+      );
     } else {
-      const errConfig = new SfdxErrorConfig('salesforce-alm', 'source_deploy', 'SourceElementDoesNotExist');
+      const errConfig = new SfdxErrorConfig(
+        '@salesforce/source-deploy-retrieve',
+        'source_deploy',
+        'SourceElementDoesNotExist'
+      );
       errConfig.setErrorTokens([mdType, mdName]);
       throw SfdxError.create(errConfig);
     }
@@ -283,7 +383,12 @@ export const getSourceElementsInPath = async function(
   sourcePath: string,
   sourceWorkspaceAdapter: any
 ): Promise<AggregateSourceElements> {
-  return sourceWorkspaceAdapter.getAggregateSourceElements(false, undefined, undefined, sourcePath);
+  return sourceWorkspaceAdapter.getAggregateSourceElements(
+    false,
+    undefined,
+    undefined,
+    sourcePath
+  );
 };
 
 /**
@@ -306,42 +411,55 @@ export const toArray = function(arrayOrObjectOrUndefined: any) {
  * @param manifestPath {string} The filepath for the manifest
  * @returns {ManifestEntry[]} An array for ManifestEntry objects from the manifest.
  */
-export const parseToManifestEntriesArray = async function(manifestPath: string): Promise<ManifestEntry[]> {
+export const parseToManifestEntriesArray = async function(
+  manifestPath: string
+): Promise<ManifestEntry[]> {
   const entries: ManifestEntry[] = [];
   const options = {
     unpackaged: manifestPath
   };
 
-  return MdRetrieveApi._getPackageJson(undefined, options).then(manifestJson => {
-    toArray(manifestJson.types).forEach(type => {
-      if (!type.name) {
-        const errConfig = new SfdxErrorConfig('salesforce-alm', 'source', 'IllFormattedManifest');
-        errConfig.setErrorTokens(['; <name> is missing']);
-        throw SfdxError.create(errConfig);
-      }
-      toArray(type.members).forEach(member => {
-        const _member = PathUtil.replaceForwardSlashes(member);
-        entries.push({
-          type: type.name,
-          name: _member
+  return MdRetrieveApi._getPackageJson(undefined, options).then(
+    manifestJson => {
+      toArray(manifestJson.types).forEach(type => {
+        if (!type.name) {
+          const errConfig = new SfdxErrorConfig(
+            '@salesforce/source-deploy-retrieve',
+            'source',
+            'IllFormattedManifest'
+          );
+          errConfig.setErrorTokens(['; <name> is missing']);
+          throw SfdxError.create(errConfig);
+        }
+        toArray(type.members).forEach(member => {
+          const _member = PathUtil.replaceForwardSlashes(member);
+          entries.push({
+            type: type.name,
+            name: _member
+          });
         });
       });
-    });
-    return entries;
-  });
+      return entries;
+    }
+  );
 };
 
 /**
  * Parse manifest entry strings into an array of ManifestEntry objects
  * @param arg {string} The entry string; e.g., "ApexClass, CustomObject:MyObjectName"
  */
-export const parseManifestEntries = function(entries: string): ManifestEntry[] | null {
+export const parseManifestEntries = function(
+  entries: string
+): ManifestEntry[] | null {
   if (entries) {
     const mdParamArray = entries.split(',');
     return mdParamArray.map(md => {
       const [mdType, ...rest] = md.split(':');
       const mdName = rest.length ? rest.join(':') : '*';
-      return { type: mdType.trim(), name: PathUtil.replaceForwardSlashes(mdName.trim()) };
+      return {
+        type: mdType.trim(),
+        name: PathUtil.replaceForwardSlashes(mdName.trim())
+      };
     });
   }
   return null;
@@ -362,7 +480,12 @@ export const toManifest = async function(
     const entries: ManifestEntry[] = parseManifestEntries(options.metadata);
     if (entries != null) {
       // Create a manifest and update the options with the manifest file.
-      options.manifest = (await createManifest(org, options, entries, tmpOutputDir)).file;
+      options.manifest = (await createManifest(
+        org,
+        options,
+        entries,
+        tmpOutputDir
+      )).file;
       return options.manifest;
     } else {
       return null;
@@ -403,13 +526,23 @@ export const createManifest = async function(
  * @param error The error to inspect.
  */
 export const checkForXmlParseError = function(path: string, error: Error) {
-  if (path && error instanceof SfdxError && error.name === `xmlParseErrorsReported`) {
+  if (
+    path &&
+    error instanceof SfdxError &&
+    error.name === `xmlParseErrorsReported`
+  ) {
     const data = (error.data as XmlLineError[]) || [];
     const message = `${path}:${os.EOL}${data.reduce(
-      (messages: string, message: XmlLineError) => `${messages}${os.EOL}${message.message}`,
+      (messages: string, message: XmlLineError) =>
+        `${messages}${os.EOL}${message.message}`,
       ''
     )}`;
-    return SfdxError.create('salesforce-alm', 'source', 'XmlParsingError', [message]);
+    return SfdxError.create(
+      '@salesforce/source-deploy-retrieve',
+      'source',
+      'XmlParsingError',
+      [message]
+    );
   }
   return error;
 };
