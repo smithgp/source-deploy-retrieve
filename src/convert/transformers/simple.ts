@@ -3,7 +3,7 @@ import { MetadataComponent, SourcePath } from '../../types';
 import * as fs from 'fs';
 import { pipeline } from 'stream';
 import { promisify } from 'util';
-import { sep, join } from 'path';
+import { sep, join, dirname } from 'path';
 import {
   ensureDirectoryExists,
   ensureFileExists
@@ -51,6 +51,7 @@ export class SimpleTransformer implements MetadataTransformer {
       fs.createReadStream(src),
       fs.createWriteStream(dest)
     );
+    // ensureDirectoryExists(dirname(dest));
     // return copy(src, dest, fs.constants.COPYFILE_FICLONE);
   }
 
