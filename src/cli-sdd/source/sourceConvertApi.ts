@@ -74,7 +74,7 @@ export class SourceConvertApi {
       packagename,
       unsupportedMimeTypes
     } = context;
-
+    let start = new Date();
     await this.initWorkspaceAdapter();
 
     try {
@@ -92,7 +92,10 @@ export class SourceConvertApi {
       }
       throw err;
     }
-
+    //@ts-ignore
+    let elapsed = new Date() - start;
+    console.log(`Initialization: ${elapsed} ms`);
+    start = new Date();
     const sourceElementsResolver = new SourceElementsResolver(
       this.scratchOrg,
       this.sourceWorkspaceAdapter
@@ -129,14 +132,22 @@ export class SourceConvertApi {
         )
       );
     }
-
-    return this.convertSourceToMdapi(
+    //@ts-ignore
+    elapsed = new Date() - start;
+    console.log(`Resolving Source Elements: ${elapsed} ms`);
+    start = new Date();
+    const result = await this.convertSourceToMdapi(
       outputDir,
       packagename,
       sourceElements,
       false,
       unsupportedMimeTypes
     );
+    //@ts-ignore
+    elapsed = new Date() - start;
+    console.log(`Conversion: ${elapsed} ms`);
+
+    return result;
   }
 
   public async convertSourceToMdapi(
