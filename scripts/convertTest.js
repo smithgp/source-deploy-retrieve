@@ -13,6 +13,8 @@ const pathToLargeForceApp =
   '/Users/b.powell/dev/dx-projects/sample-convert/force-app';
 const pathToSmallForceApp =
   '/Users/b.powell/dev/dx-projects/sample-convert-small/force-app';
+const pathToMediumForceApp =
+  '/Users/b.powell/dev/dx-projects/sample-convert-medium/force-app';
 const destination = '/Users/b.powell/Desktop/converted';
 
 async function test(forceApp) {
@@ -26,6 +28,9 @@ async function test(forceApp) {
   });
   console.log(`Conversion: ${convertTime} ms`);
   console.log(`Total: ${convertTime + elapsed} ms`);
+  console.log(
+    `Memory Consumption: ${process.memoryUsage().heapUsed / 1024 / 1024} MB`
+  );
 }
 
 async function testCli(forceApp) {
@@ -33,10 +38,16 @@ async function testCli(forceApp) {
     await convertSourceCli(forceApp, destination);
   });
   console.log(`Total: ${elapsed} ms`);
+  console.log(
+    `Memory Consumption: ${process.memoryUsage().heapUsed / 1024 / 1024} MB`
+  );
 }
 
 // testCli(pathToSmallForceApp);
 // test(pathToSmallForceApp);
 
-testCli(pathToLargeForceApp);
+testCli(pathToMediumForceApp);
+// test(pathToMediumForceApp);
+
+// testCli(pathToLargeForceApp);
 // test(pathToLargeForceApp);
