@@ -32,6 +32,6 @@ export class Bundle extends MixedContent {
   protected getMetadataXmlPath(pathToSource: SourcePath): SourcePath {
     // Bundles are MixedContent, but the -meta.xml is located in the component's folder.
     const bundleRootPath = this.getPathToContent(pathToSource);
-    return findMetadataXml(bundleRootPath, basename(bundleRootPath));
+    return this.fileContainer.findMetadataXml(bundleRootPath, basename(bundleRootPath));
   }
 }

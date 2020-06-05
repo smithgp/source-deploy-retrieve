@@ -12,6 +12,7 @@ import { BaseSourceAdapter } from './base';
 import { MixedContent } from './mixedContent';
 import { RegistryError } from '../../errors';
 import { ForceIgnore } from '../forceIgnore';
+import { FileContainer } from '../fileContainers';
 
 export enum AdapterId {
   Bundle = 'bundle',
@@ -22,17 +23,18 @@ export enum AdapterId {
 export const getAdapter = (
   type: MetadataType,
   adapterId: AdapterId,
+  fileContainer: FileContainer,
   forceIgnore?: ForceIgnore
 ): SourceAdapter => {
   switch (adapterId) {
     case AdapterId.Bundle:
-      return new Bundle(type, undefined, forceIgnore);
+      return new Bundle(type, fileContainer, forceIgnore);
     case AdapterId.MatchingContentFile:
-      return new MatchingContentFile(type, undefined, forceIgnore);
+      return new MatchingContentFile(type, fileContainer, forceIgnore);
     case AdapterId.MixedContent:
-      return new MixedContent(type, undefined, forceIgnore);
+      return new MixedContent(type, fileContainer, forceIgnore);
     case undefined:
-      return new BaseSourceAdapter(type, undefined, forceIgnore);
+      return new BaseSourceAdapter(type, fileContainer, forceIgnore);
     default:
       throw new RegistryError('error_missing_adapter', [type.name, adapterId]);
   }

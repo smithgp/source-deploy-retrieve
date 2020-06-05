@@ -33,14 +33,11 @@ export class MatchingContentFile extends BaseSourceAdapter {
     return `${pathToSource}${META_XML_SUFFIX}`;
   }
 
-  protected getSourcePaths(
-    fsPath: SourcePath,
-    isMetaXml: boolean
-  ): SourcePath[] {
+  protected getSourcePaths(fsPath: SourcePath, isMetaXml: boolean): SourcePath[] {
     let sourcePath: SourcePath;
     if (isMetaXml) {
       const path = fsPath.slice(0, fsPath.lastIndexOf(META_XML_SUFFIX));
-      if (existsSync(path)) {
+      if (this.fileContainer.exists(path)) {
         sourcePath = path;
       }
     } else if (this.registry.suffixes[extName(fsPath)]) {
@@ -49,10 +46,7 @@ export class MatchingContentFile extends BaseSourceAdapter {
     if (!sourcePath) {
       throw new ExpectedSourceFilesError(this.type, fsPath);
     } else if (this.forceIgnore.denies(sourcePath)) {
-      throw new UnexpectedForceIgnore('error_no_source_ignore', [
-        this.type.name,
-        sourcePath
-      ]);
+      throw new UnexpectedForceIgnore('error_no_source_ignore', [this.type.name, sourcePath]);
     }
     return [sourcePath];
   }

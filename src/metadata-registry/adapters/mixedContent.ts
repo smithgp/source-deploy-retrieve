@@ -7,16 +7,13 @@
 
 import { BaseSourceAdapter } from './base';
 import { sep, dirname } from 'path';
-import {
-  parseMetadataXml,
-  findMetadataXml,
-  findMetadataContent
-} from '../../utils/registry';
+import { parseMetadataXml, findMetadataXml, findMetadataContent } from '../../utils/registry';
 import { ExpectedSourceFilesError } from '../../errors';
 import { existsSync } from 'fs';
 import { isDirectory, walk } from '../../utils/fileSystemHandler';
 import { baseName } from '../../utils/path';
 import { SourcePath, MetadataType } from '../../types';
+import { FileContainer } from '../fileContainers';
 
 /**
  * Handles types with mixed content. Mixed content means there are one or more source
@@ -44,13 +41,10 @@ import { SourcePath, MetadataType } from '../../types';
  */
 export class MixedContent extends BaseSourceAdapter {
   protected getMetadataXmlPath(pathToSource: SourcePath): SourcePath {
-    return MixedContent.findXmlFromContentPath(pathToSource, this.type);
+    return this.fileContainer.findXmlFromContentPath(pathToSource, this.type);
   }
 
-  protected getSourcePaths(
-    fsPath: SourcePath,
-    isMetaXml: boolean
-  ): SourcePath[] {
+  protected getSourcePaths(fsPath: SourcePath, isMetaXml: boolean): SourcePath[] {
     let contentPath;
     const ignore = new Set<SourcePath>();
 
@@ -59,7 +53,7 @@ export class MixedContent extends BaseSourceAdapter {
       ignore.add(this.getMetadataXmlPath(fsPath));
     } else {
       const metadataXml = parseMetadataXml(fsPath);
-      contentPath = findMetadataContent(dirname(fsPath), metadataXml.fullName);
+      contentPath = this.fileContainer.findContent(dirname(fsPath), metadataXml.fullName);
       ignore.add(fsPath);
     }
 
@@ -67,17 +61,15 @@ export class MixedContent extends BaseSourceAdapter {
       throw new ExpectedSourceFilesError(this.type, fsPath);
     }
 
-    const sources = isDirectory(contentPath)
-      ? walk(contentPath, ignore)
+    const sources = this.fileContainer.isDirectory(contentPath)
+      ? this.fileContainer.walk(contentPath, ignore)
       : [contentPath];
     return sources.filter(s => this.forceIgnore.accepts(s));
   }
 
   protected getPathToContent(source: SourcePath): SourcePath {
     const pathParts = source.split(sep);
-    const typeFolderIndex = pathParts.findIndex(
-      part => part === this.type.directoryName
-    );
+    const typeFolderIndex = pathParts.findIndex(part => part === this.type.directoryName);
     const offset = this.type.inFolder ? 3 : 2;
     return pathParts.slice(0, typeFolderIndex + offset).join(sep);
   }
@@ -88,20 +80,17 @@ export class MixedContent extends BaseSourceAdapter {
    * is a directory, the path can be files or other directories inside of it.
    * @param source
    */
-  public static findXmlFromContentPath(
-    contentPath: SourcePath,
-    type: MetadataType
-  ): SourcePath {
-    const pathParts = contentPath.split(sep);
-    const typeFolderIndex = pathParts.findIndex(
-      part => part === type.directoryName
-    );
-    const offset = type.inFolder ? 3 : 2;
-    const rootContentPath = pathParts
-      .slice(0, typeFolderIndex + offset)
-      .join(sep);
-    const rootTypeDirectory = dirname(rootContentPath);
-    const contentFullName = baseName(rootContentPath);
-    return findMetadataXml(rootTypeDirectory, contentFullName);
-  }
+  // public static findXmlFromContentPath(
+  //   fileContainer: FileContainer,
+  //   contentPath: SourcePath,
+  //   type: MetadataType
+  // ): SourcePath {
+  //   const pathParts = contentPath.split(sep);
+  //   const typeFolderIndex = pathParts.findIndex(part => part === type.directoryName);
+  //   const offset = type.inFolder ? 3 : 2;
+  //   const rootContentPath = pathParts.slice(0, typeFolderIndex + offset).join(sep);
+  //   const rootTypeDirectory = dirname(rootContentPath);
+  //   const contentFullName = baseName(rootContentPath);
+  //   return fileContainer.findMetadataXml(rootTypeDirectory, contentFullName);
+  // }
 }
