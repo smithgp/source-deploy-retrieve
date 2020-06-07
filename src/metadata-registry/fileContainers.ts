@@ -5,6 +5,7 @@ import { parseMetadataXml } from '../utils/registry';
 import { baseName } from '../utils';
 // @ts-ignore
 import * as fetch from 'node-fetch';
+import { spawnSync } from 'child_process';
 
 export interface FileContainer {
   isDirectory(path: SourcePath): boolean;
@@ -82,54 +83,100 @@ export class LocalFileContainer extends BaseFileContainer {
   }
 }
 
-export class GithubFileContainer extends BaseFileContainer {
-  private repoOwner: string;
-  private repoName: string;
-  private treeRef: string;
+type GitTreeOptions = {
+  github: { repoOwner: string; repoName: string; treeRef: string };
+  local: { treeRef: string };
+};
+
+type GitObject = {
+  path: SourcePath;
+  mode: string;
+  type: 'tree' | 'blob';
+  sha: string;
+};
+
+export class GitFileContainer extends BaseFileContainer {
   private tree = new Map<SourcePath, Set<SourcePath>>();
 
-  constructor(repoOwner: string, repoName: string, treeRef: string) {
-    super();
-    this.repoOwner = repoOwner;
-    this.repoName = repoName;
-    this.treeRef = treeRef;
+  public async initialize<T extends keyof GitTreeOptions>(
+    treeSource: T,
+    options: GitTreeOptions[T]
+  ): Promise<void> {
+    this.tree.clear();
+
+    switch (treeSource) {
+      case 'github':
+        await this.fetchGithubTree(options as GitTreeOptions['github']);
+        break;
+      case 'local':
+        this.fetchLocalTree(options);
+        break;
+    }
   }
 
-  public async fetch() {
+  public isDirectory(path: string): boolean {
+    const normalized = this.normalizePath(path);
+    if (this.exists(normalized)) {
+      return this.tree.has(normalized);
+    }
+    throw new Error(normalized + ' does not exist');
+  }
+
+  public exists(path: string): boolean {
+    const normalized = this.normalizePath(path);
+    return this.tree.get(dirname(normalized)).has(normalized) || this.tree.has(normalized);
+  }
+
+  public readDir(path: string): string[] {
+    const normalized = this.normalizePath(path);
+    return Array.from(this.tree.get(normalized)).map(p => basename(p));
+  }
+
+  private normalizePath(path: string): string {
+    return path.replace(/\\/g, '/');
+  }
+
+  private async fetchGithubTree(options: GitTreeOptions['github']): Promise<void> {
+    const { repoName, repoOwner, treeRef } = options;
     const response = await fetch(
-      `https://api.github.com/repos/${this.repoOwner}/${this.repoName}/git/trees/${
-        this.treeRef
-      }?recursive=true`,
+      `https://api.github.com/repos/${repoOwner}/${repoName}/git/trees/${treeRef}?recursive=true`,
       {
         method: 'GET',
         headers: { Authorization: `Bearer ${process.env.GH_TOKEN}` }
       }
     );
-    const result = await response.json();
-    for (const entry of result.tree) {
-      const parent = dirname(entry.path);
-      if (!this.tree.has(parent)) {
-        this.tree.set(parent, new Set<SourcePath>());
-      }
-      this.tree.get(parent).add(entry.path);
-      if (entry.type === 'tree' && !this.tree.has(entry.path)) {
-        this.tree.set(entry.path, new Set<SourcePath>());
+    const objects: GitObject[] = (await response.json()).tree;
+    objects.forEach(object => this.addObject(object));
+  }
+
+  private fetchLocalTree(options: GitTreeOptions['local'], path = ''): void {
+    // can one spawn with -r work?
+    const lsResult = spawnSync('git', ['ls-tree', options.treeRef]).stdout.toString();
+    for (const line of lsResult.split('\n')) {
+      const matches = line.match(/(\d{6})\s(tree|blob)\s([a-z0-9]*)\t(.*)/);
+      if (matches) {
+        const object: GitObject = {
+          mode: matches[1],
+          type: matches[2] as 'tree' | 'blob',
+          sha: matches[3],
+          path: path === '' ? matches[4] : `${path}/${matches[4]}`
+        };
+        this.addObject(object);
+        if (object.type === 'tree') {
+          this.fetchLocalTree({ treeRef: object.sha }, object.path);
+        }
       }
     }
   }
 
-  public isDirectory(path: string): boolean {
-    if (this.exists(path)) {
-      return this.tree.has(path);
+  private addObject(object: GitObject): void {
+    const parent = dirname(object.path);
+    if (!this.tree.has(parent)) {
+      this.tree.set(parent, new Set<SourcePath>());
     }
-    throw new Error(path + ' does not exist');
-  }
-
-  public exists(path: string): boolean {
-    return this.tree.get(dirname(path)).has(path) || this.tree.has(path);
-  }
-
-  public readDir(path: string): string[] {
-    return Array.from(this.tree.get(path)).map(p => basename(p));
+    this.tree.get(parent).add(object.path);
+    if (object.type === 'tree' && !this.tree.has(object.path)) {
+      this.tree.set(object.path, new Set<SourcePath>());
+    }
   }
 }
