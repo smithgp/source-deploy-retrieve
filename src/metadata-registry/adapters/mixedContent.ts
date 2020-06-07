@@ -57,7 +57,7 @@ export class MixedContent extends BaseSourceAdapter {
       ignore.add(fsPath);
     }
 
-    if (!existsSync(contentPath)) {
+    if (!this.fileContainer.exists(contentPath)) {
       throw new ExpectedSourceFilesError(this.type, fsPath);
     }
 

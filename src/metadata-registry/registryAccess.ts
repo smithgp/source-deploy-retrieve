@@ -29,8 +29,8 @@ export class RegistryAccess {
   /**
    * @param data Optional custom registry data.
    */
-  constructor(data?: MetadataRegistry) {
-    this.fileContainer = new LocalFileContainer();
+  constructor(data?: MetadataRegistry, container = new LocalFileContainer()) {
+    this.fileContainer = container;
     this.data = data
       ? // deep freeze a copy, not the original object
         deepFreeze(JSON.parse(JSON.stringify(data)) as MetadataRegistry)

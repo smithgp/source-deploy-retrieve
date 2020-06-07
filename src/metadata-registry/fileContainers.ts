@@ -1,8 +1,10 @@
 import { SourcePath, MetadataType } from '../types';
 import { lstatSync, readdirSync, existsSync } from 'fs';
-import { join, dirname, sep } from 'path';
+import { join, dirname, sep, basename } from 'path';
 import { parseMetadataXml } from '../utils/registry';
 import { baseName } from '../utils';
+// @ts-ignore
+import * as fetch from 'node-fetch';
 
 export interface FileContainer {
   isDirectory(path: SourcePath): boolean;
@@ -80,15 +82,54 @@ export class LocalFileContainer extends BaseFileContainer {
   }
 }
 
-// class GithubFileContainer extends BaseFileContainer {
-//   private repoOwner: string;
-//   private repoName: string;
-//   private treeRef: string;
+export class GithubFileContainer extends BaseFileContainer {
+  private repoOwner: string;
+  private repoName: string;
+  private treeRef: string;
+  private tree = new Map<SourcePath, Set<SourcePath>>();
 
-//   constructor(repoOwner: string, repoName: string, treeRef: string) {
-//     super();
-//     this.repoOwner = repoOwner;
-//     this.repoName = repoName;
-//     this.treeRef = treeRef;
-//   }
-// }
+  constructor(repoOwner: string, repoName: string, treeRef: string) {
+    super();
+    this.repoOwner = repoOwner;
+    this.repoName = repoName;
+    this.treeRef = treeRef;
+  }
+
+  public async fetch() {
+    const response = await fetch(
+      `https://api.github.com/repos/${this.repoOwner}/${this.repoName}/git/trees/${
+        this.treeRef
+      }?recursive=true`,
+      {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${process.env.GH_TOKEN}` }
+      }
+    );
+    const result = await response.json();
+    for (const entry of result.tree) {
+      const parent = dirname(entry.path);
+      if (!this.tree.has(parent)) {
+        this.tree.set(parent, new Set<SourcePath>());
+      }
+      this.tree.get(parent).add(entry.path);
+      if (entry.type === 'tree' && !this.tree.has(entry.path)) {
+        this.tree.set(entry.path, new Set<SourcePath>());
+      }
+    }
+  }
+
+  public isDirectory(path: string): boolean {
+    if (this.exists(path)) {
+      return this.tree.has(path);
+    }
+    throw new Error(path + ' does not exist');
+  }
+
+  public exists(path: string): boolean {
+    return this.tree.get(dirname(path)).has(path) || this.tree.has(path);
+  }
+
+  public readDir(path: string): string[] {
+    return Array.from(this.tree.get(path)).map(p => basename(p));
+  }
+}
