@@ -29,10 +29,10 @@ async function diff(ref1, ref2 = DEFAULT_REF) {
 
   const changes = doDiff(ref1Map, ref2Map);
   if (changes.added.size > 0) {
-    printTypeMap(`\u001b[32m+++ ${ref2}\u001b[0m`, changes.added);
+    printTypeMap(`\u001b[32madded after ${ref1}:\u001b[0m`, changes.added);
   }
   if (changes.deleted.size > 0) {
-    printTypeMap(`\u001b[31m--- ${ref1}\u001b[0m`, changes.deleted);
+    printTypeMap(`\u001b[31mmissing from ${ref2}:\u001b[0m`, changes.deleted);
   }
 }
 
