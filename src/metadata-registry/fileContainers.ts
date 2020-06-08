@@ -146,18 +146,21 @@ export class GitFileContainer extends BaseFileContainer {
       }
     );
     const objects: GitObject[] = (await response.json()).tree;
-    objects.forEach(object => this.addObject(object));
+    objects.forEach(object => {
+      if (object.type === 'blob') {
+        this.addObject(object);
+      }
+    });
   }
 
   private fetchLocalTree(options: GitTreeOptions['local'], path = ''): void {
-    // can one spawn with -r work?
-    const lsResult = spawnSync('git', ['ls-tree', options.treeRef]).stdout.toString();
+    const lsResult = spawnSync('git', ['ls-tree', '-r', options.treeRef]).stdout.toString();
     for (const line of lsResult.split('\n')) {
       const matches = line.match(/(\d{6})\s(tree|blob)\s([a-z0-9]*)\t(.*)/);
       if (matches) {
         const object: GitObject = {
           mode: matches[1],
-          type: matches[2] as 'tree' | 'blob',
+          type: matches[2] as 'blob',
           sha: matches[3],
           path: path === '' ? matches[4] : `${path}/${matches[4]}`
         };
@@ -170,13 +173,16 @@ export class GitFileContainer extends BaseFileContainer {
   }
 
   private addObject(object: GitObject): void {
+    const ensureTreeExists = (path: SourcePath): void => {
+      if (!this.tree.has(path)) {
+        this.tree.set(path, new Set<SourcePath>());
+        const parent = dirname(path);
+        ensureTreeExists(parent);
+        this.tree.get(parent).add(path);
+      }
+    };
     const parent = dirname(object.path);
-    if (!this.tree.has(parent)) {
-      this.tree.set(parent, new Set<SourcePath>());
-    }
+    ensureTreeExists(parent);
     this.tree.get(parent).add(object.path);
-    if (object.type === 'tree' && !this.tree.has(object.path)) {
-      this.tree.set(object.path, new Set<SourcePath>());
-    }
   }
 }

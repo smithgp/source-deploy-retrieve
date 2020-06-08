@@ -1,29 +1,48 @@
 const { RegistryAccess } = require('../lib');
 const { GitFileContainer } = require('../lib/metadata-registry/fileContainers');
 
-async function go(dir, ref1, ref2) {
+/**
+ * A small CLI to test utilizing the registry with GIT objects
+ *
+ * Listing components at a given REF:
+ *
+ * node /../path/to/this/script.js list develop
+ *
+ * Get additions/deletions between two git REFs:
+ *
+ * node /../path/to/this/script.js diff master myFeatureBranch
+ */
+async function diff(ref1, ref2) {
   const container = new GitFileContainer();
   const registry = new RegistryAccess(undefined, container);
-  process.chdir(dir);
 
   await container.initialize('local', { treeRef: ref1 });
   const ref1Components = registry.getComponentsFromPath('force-app');
   const ref1Map = buildTypeMap(ref1Components);
 
-  await container.initialize('local', { treeRef: ref2 });
+  await container.initialize('local', { treeRef: ref2 || 'HEAD' });
   const ref2Components = registry.getComponentsFromPath('force-app');
   const ref2Map = buildTypeMap(ref2Components);
 
-  const changes = diff(ref1Map, ref2Map);
+  const changes = doDiff(ref1Map, ref2Map);
   if (changes.added.size > 0) {
-    printChanges(`\u001b[32m+++ ${ref2}\u001b[0m`, changes.added);
+    printTypeMap(`\u001b[32m+++ ${ref2}\u001b[0m`, changes.added);
   }
   if (changes.deleted.size > 0) {
-    printChanges(`\u001b[31m--- ${ref1}\u001b[0m`, changes.deleted);
+    printTypeMap(`\u001b[31m--- ${ref1}\u001b[0m`, changes.deleted);
   }
 }
 
-function printChanges(label, changeMap) {
+async function list(ref) {
+  const container = new GitFileContainer();
+  const registry = new RegistryAccess(undefined, container);
+
+  await container.initialize('local', { treeRef: ref });
+  const components = registry.getComponentsFromPath('force-app');
+  printTypeMap('', buildTypeMap(components));
+}
+
+function printTypeMap(label, changeMap) {
   let output = `${label}\n`;
   for (const entry of changeMap.entries()) {
     output += `  \u001b[37;1m${entry[0]}\u001b[0m\n`;
@@ -46,7 +65,7 @@ function buildTypeMap(components) {
   return typeMap;
 }
 
-function diff(map1, map2) {
+function doDiff(map1, map2) {
   const diffs = {
     added: new Map(),
     deleted: new Map(),
@@ -81,4 +100,11 @@ function diff(map1, map2) {
   return diffs;
 }
 
-go(process.argv[2], process.argv[3], process.argv[4]);
+switch (process.argv[2]) {
+  case 'diff':
+    diff(process.argv[3], process.argv[4]);
+    break;
+  case 'list':
+    list(process.argv[3]);
+    break;
+}
