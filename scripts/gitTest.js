@@ -12,7 +12,10 @@ const { GitFileContainer } = require('../lib/metadata-registry/fileContainers');
  *
  * node /../path/to/this/script.js diff master myFeatureBranch
  */
-async function diff(ref1, ref2 = 'HEAD') {
+
+const DEFAULT_REF = 'HEAD';
+
+async function diff(ref1, ref2 = DEFAULT_REF) {
   const container = new GitFileContainer();
   const registry = new RegistryAccess(undefined, container);
 
@@ -33,13 +36,13 @@ async function diff(ref1, ref2 = 'HEAD') {
   }
 }
 
-async function list(ref) {
+async function list(ref = DEFAULT_REF) {
   const container = new GitFileContainer();
   const registry = new RegistryAccess(undefined, container);
 
   await container.initialize('local', { treeRef: ref });
   const components = registry.getComponentsFromPath('force-app');
-  printTypeMap('', buildTypeMap(components));
+  printTypeMap(`\n\u001b[33;1m${ref}:\u001b[0m`, buildTypeMap(components));
 }
 
 function printTypeMap(label, changeMap) {
