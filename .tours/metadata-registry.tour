@@ -1,0 +1,31 @@
+{
+  "title": "Metadata Registry",
+  "steps": [
+    {
+      "file": "src/metadata-registry/registryAccess.ts",
+      "line": 22,
+      "description": "The RegistryAccess class is the main driver for resolving metadata components."
+    },
+    {
+      "file": "src/metadata-registry/registryAccess.ts",
+      "line": 61,
+      "description": "With a given file path, it determines whether a component is being directly referenced or if it should walk the file tree to find potentially many components."
+    },
+    {
+      "file": "src/metadata-registry/registryAccess.ts",
+      "line": 132,
+      "description": "It first determines the metadata type of a component, followed by passing what it knows to a `SourceAdapter` to collect related files, and finally package them into a `MetadataComponent` object."
+    },
+    {
+      "file": "src/metadata-registry/adapters/sourceAdapterFactory.ts",
+      "line": 16,
+      "description": "These are the different `SourceAdapter`s available for a metadata type. **SourceAdapters** are responsible for constructing `MetadataComponent` objects, which encapsulates all of a component's related information and source files. Types are assigned to one of these adapter ids in the registry data file, and the `SourceAdapterFactory` class will create the correct strategy for resolving a component based on a given type."
+    },
+    {
+      "file": "src/metadata-registry/adapters/baseSourceAdapter.ts",
+      "line": 22,
+      "description": "Concrete `SourceAdapter` classes extend `BaseSourceAdapter` to share common functionality. Child adapters are called upon to find content or the associated root metadata xml if needed."
+    }
+  ],
+  "ref": "develop"
+}
