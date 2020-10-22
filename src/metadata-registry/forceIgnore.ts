@@ -38,7 +38,8 @@ export class ForceIgnore {
       const file = readFileSync(forceIgnorePath, 'utf-8');
       this.contents = this.parseContents(`${file}\n${this.DEFAULT_IGNORE.join('\n')}`);
       // add the default ignore paths, and then parse the .forceignore file
-      this.parser = ignore().add(this.contents.split('\n'));
+      // DO NOT CALL parseContents FOR THE NEW PARSER
+      this.parser = ignore().add(`${file}\n${this.DEFAULT_IGNORE.join('\n')}`);
       // TODO: START REMOVE AFTER GITIGNORE-PARSER DEPRECATED
       // add the default and send to the old gitignore-parser
       this.gitignoreParser = gitignoreParser.compile(this.contents);
@@ -69,31 +70,39 @@ export class ForceIgnore {
   }
 
   public denies(fsPath: SourcePath): boolean {
-    // AFTER GITIGNORE-PARSER DEPRECATED, change this to `return this.parser.ignores(relative(this.forceIgnoreDirectory, fsPath));`
-    let denies = false;
-    let fctResult = false;
-    // if there's a parser, and we're not trying to .forceignore the .forceignore
-    if (this.parser && this.gitignoreParser && !!relative(this.forceIgnoreDirectory, fsPath)) {
-      denies = this.parser.ignores(relative(this.forceIgnoreDirectory, fsPath));
-      fctResult = this.gitignoreParser.denies(relative(this.forceIgnoreDirectory, fsPath));
-      // send to look for differences, analytics
-      this.resolveConflict(denies, fctResult, this.contents);
+    try {
+      // AFTER GITIGNORE-PARSER DEPRECATED, change this to `return this.parser.ignores(relative(this.forceIgnoreDirectory, fsPath));`
+      let denies = false;
+      let fctResult = false;
+      // if there's a parser, and we're not trying to .forceignore the .forceignore
+      if (this.parser && this.gitignoreParser && !!relative(this.forceIgnoreDirectory, fsPath)) {
+        denies = this.parser.ignores(relative(this.forceIgnoreDirectory, fsPath));
+        fctResult = this.gitignoreParser.denies(relative(this.forceIgnoreDirectory, fsPath));
+        // send to look for differences, analytics
+        this.resolveConflict(denies, fctResult, this.contents);
+      }
+      return this.useNewParser ? denies : fctResult;
+    } catch (e) {
+      return false;
     }
-    return this.useNewParser ? denies : fctResult;
   }
 
   public accepts(fsPath: SourcePath): boolean {
-    // AFTER GITIGNORE-PARSER DEPRECATED, change this to `return !this.parser.ignores(relative(this.forceIgnoreDirectory, fsPath));`
-    let accepts = true;
-    let fctResult = true;
-    if (this.parser && this.gitignoreParser && !!relative(this.forceIgnoreDirectory, fsPath)) {
-      accepts = !this.parser.ignores(relative(this.forceIgnoreDirectory, fsPath));
-      fctResult = this.gitignoreParser.accepts(relative(this.forceIgnoreDirectory, fsPath));
-      // send to look for differences, analytics
-      this.resolveConflict(accepts, fctResult, this.contents);
-    }
+    try {
+      // AFTER GITIGNORE-PARSER DEPRECATED, change this to `return !this.parser.ignores(relative(this.forceIgnoreDirectory, fsPath));`
+      let accepts = true;
+      let fctResult = true;
+      if (this.parser && this.gitignoreParser && !!relative(this.forceIgnoreDirectory, fsPath)) {
+        accepts = !this.parser.ignores(relative(this.forceIgnoreDirectory, fsPath));
+        fctResult = this.gitignoreParser.accepts(relative(this.forceIgnoreDirectory, fsPath));
+        // send to look for differences, analytics
+        this.resolveConflict(accepts, fctResult, this.contents);
+      }
 
-    return this.useNewParser ? accepts : fctResult;
+      return this.useNewParser ? accepts : fctResult;
+    } catch (e) {
+      return true;
+    }
   }
 
   // REMOVE THIS AFTER GITIGNORE-PARSER DEPRECATED
