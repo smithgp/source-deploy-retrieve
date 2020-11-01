@@ -21,6 +21,7 @@ import {
   RetrieveStatus,
   SourceRetrieveResult,
   ComponentRetrieval,
+  RequestStatus,
 } from './types';
 import { ConvertOutputConfig, MetadataConverter } from '../convert';
 import { DeployError, RetrieveError } from '../errors';
@@ -94,7 +95,7 @@ export class MetadataApi extends BaseApi {
     let components: SourceComponent[] = [];
     const retrieveRequest = this.formatRetrieveRequest(options.components);
     const retrieveResult = await this.getRetrievedResult(retrieveRequest, options);
-    if (retrieveResult.status === RetrieveStatus.Succeeded) {
+    if (retrieveResult.status === RequestStatus.Succeeded) {
       const tree = await ZipTreeContainer.create(Buffer.from(retrieveResult.zipFile, 'base64'));
       const zipComponents = new MetadataResolver(undefined, tree).getComponentsFromPath('.');
       components = await this.getConvertedComponents(zipComponents, options);
@@ -166,10 +167,10 @@ export class MetadataApi extends BaseApi {
       }
 
       switch (result.status) {
-        case RetrieveStatus.Succeeded:
-        case RetrieveStatus.Failed:
+        case RequestStatus.Succeeded:
+        case RequestStatus.Failed:
           return result;
-        case RetrieveStatus.InProgress:
+        case RequestStatus.InProgress:
       }
 
       triedOnce = true;
@@ -186,7 +187,7 @@ export class MetadataApi extends BaseApi {
     const success = this.calculateSuccess(retrieveResult, options, components);
 
     const sourceRetrieveResult: SourceRetrieveResult = {
-      status: success ? RetrieveStatus.Succeeded : RetrieveStatus.Failed,
+      status: success ? RequestStatus.Succeeded : RequestStatus.Failed,
       id: retrieveResult.id,
       success,
     };
@@ -238,11 +239,11 @@ export class MetadataApi extends BaseApi {
     components: ComponentRetrieval[]
   ): boolean {
     return (
-      (retrieveResult.status === RetrieveStatus.Succeeded &&
+      (retrieveResult.status === RequestStatus.Succeeded &&
         options.components.length === components.length &&
         !retrieveResult.hasOwnProperty('messages')) ||
-      retrieveResult.status === RetrieveStatus.InProgress ||
-      retrieveResult.status === RetrieveStatus.Pending
+      retrieveResult.status === RequestStatus.InProgress ||
+      retrieveResult.status === RequestStatus.Pending
     );
   }
 
@@ -326,9 +327,9 @@ export class MetadataApi extends BaseApi {
       }
 
       switch (result.status) {
-        case DeployStatus.Succeeded:
-        case DeployStatus.Failed:
-        case DeployStatus.Canceled:
+        case RequestStatus.Succeeded:
+        case RequestStatus.Failed:
+        case RequestStatus.Canceled:
           return result;
       }
 

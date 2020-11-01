@@ -24,6 +24,15 @@ import {
   FromManifestOptions,
   PackageManifestContents,
 } from './types';
+import { MetadataConverter } from '../convert';
+import { DeployOperation } from '../client/orgOperation';
+
+const DEFAULT_API_OPTIONS = {
+  rollbackOnError: true,
+  ignoreWarnings: false,
+  checkOnly: false,
+  singlePackage: true,
+};
 
 export class MetadataPackage {
   public apiVersion: string;
@@ -89,18 +98,33 @@ export class MetadataPackage {
   public async deploy(
     connection: Connection,
     options?: MetadataDeployOptions
-  ): Promise<SourceDeployResult>;
-  public async deploy(
-    username: string,
-    options?: MetadataDeployOptions
-  ): Promise<SourceDeployResult>;
+  ): Promise<DeployOperation>;
+  public async deploy(username: string, options?: MetadataDeployOptions): Promise<DeployOperation>;
   public async deploy(
     auth: Connection | string,
     options?: MetadataDeployOptions
-  ): Promise<SourceDeployResult> {
+  ): Promise<DeployOperation> {
     const connection = await this.getConnection(auth);
-    const client = new SourceClient(connection, new MetadataResolver());
-    return client.metadata.deploy(this.getSourceComponents().getAll(), options);
+    const converter = new MetadataConverter();
+    const components = this.getSourceComponents()?.getAll();
+    if (!components) {
+      throw new Error('No source components to deploy');
+    }
+    const { zipBuffer } = await converter.convert(components, 'metadata', { type: 'zip' });
+    if (!options || !options.apiOptions) {
+      options = {
+        apiOptions: DEFAULT_API_OPTIONS,
+      };
+    } else {
+      for (const [property, value] of Object.entries(DEFAULT_API_OPTIONS)) {
+        if (!(property in options.apiOptions)) {
+          //@ts-ignore ignore while dynamically building the defaults
+          options.apiOptions[property] = value;
+        }
+      }
+    }
+    const { id } = await connection.metadata.deploy(zipBuffer, options.apiOptions);
+    return new DeployOperation(id, connection, components);
   }
 
   public async retrieve(

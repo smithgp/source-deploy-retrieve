@@ -20,6 +20,7 @@ import {
   QueryResult,
   SourceRetrieveResult,
   RetrieveStatus,
+  RequestStatus,
 } from './types';
 
 const retrieveTypes = new Set([
@@ -77,7 +78,7 @@ export class ToolingApi extends BaseApi {
 
       if (queryResult && queryResult.records.length === 0) {
         return {
-          status: RetrieveStatus.Succeeded,
+          status: RequestStatus.Succeeded,
           success: true,
           components: [],
           messages: nls.localize('error_md_not_present_in_org', mdComponent.fullName),
@@ -88,7 +89,7 @@ export class ToolingApi extends BaseApi {
       createFiles(saveFilesMap);
 
       retrieveResult = {
-        status: RetrieveStatus.Succeeded,
+        status: RequestStatus.Succeeded,
         success: true,
         components: [{ component: mdComponent }],
       };

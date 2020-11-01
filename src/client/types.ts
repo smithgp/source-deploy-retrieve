@@ -5,7 +5,10 @@
  * For full license text, see LICENSE.txt file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
 import { Connection } from '@salesforce/core';
+import { EventEmitter } from 'events';
+import { Subject } from 'rxjs';
 import { SourcePath } from '../common/types';
+import { DeployError } from '../errors';
 import { MetadataResolver, RegistryAccess, SourceComponent } from '../metadata-registry';
 
 // ------------------------------------------------
@@ -23,7 +26,7 @@ export type ComponentDeployment = {
 
 export type ComponentRetrieval = {
   component: SourceComponent;
-  status?: RetrieveStatus;
+  status?: RequestStatus;
   diagnostics?: ComponentDiagnostic;
 };
 
@@ -46,20 +49,20 @@ export enum ComponentStatus {
   Failed = 'Failed',
 }
 
-interface SourceApiResult {
+export interface SourceApiResult {
   success: boolean;
 }
 
 export interface SourceDeployResult extends SourceApiResult {
   id: RecordId;
   components?: ComponentDeployment[];
-  status: DeployStatus | ToolingDeployStatus;
+  status: RequestStatus | ToolingDeployStatus;
 }
 
 export interface SourceRetrieveResult extends SourceApiResult {
   id?: RecordId;
   components?: ComponentRetrieval[];
-  status: RetrieveStatus;
+  status: RequestStatus;
   messages?: RetrieveMessage[] | string;
 }
 
@@ -67,11 +70,18 @@ export interface SourceRetrieveResult extends SourceApiResult {
 // Metadata API result types
 // ------------------------------------------------
 
+export interface MetadataRequestResult {
+  id: string;
+  status: RequestStatus;
+  success: boolean;
+  done: boolean;
+}
+
 /**
  * Raw response returned from a checkDeployStatus call to the Metadata API
  */
-export type DeployResult = {
-  id: string;
+export interface DeployResult extends MetadataRequestResult {
+  // id: string;
   canceledBy?: string;
   canceledByName?: string;
   checkOnly: boolean;
@@ -80,7 +90,7 @@ export type DeployResult = {
   createdByName: string;
   createdDate: string;
   details: DeployDetails;
-  done: boolean;
+  // done: boolean;
   errorMessage?: string;
   errorStatusCode?: string;
   ignoreWarnings: boolean;
@@ -95,14 +105,24 @@ export type DeployResult = {
   rollbackOnError: boolean;
   startDate?: string;
   stateDetail?: string;
-  status: DeployStatus;
-  success: boolean;
-};
+  // status: RequestStatus;
+  // success: boolean;
+}
 
 /**
  * Possible statuses of a metadata deploy operation.
  */
 export enum DeployStatus {
+  Pending = 'Pending',
+  InProgress = 'InProgress',
+  Succeeded = 'Succeeded',
+  SucceededPartial = 'SucceededPartial',
+  Failed = 'Failed',
+  Canceling = 'Canceling',
+  Canceled = 'Canceled',
+}
+
+export enum RequestStatus {
   Pending = 'Pending',
   InProgress = 'InProgress',
   Succeeded = 'Succeeded',
@@ -161,16 +181,16 @@ export type RetrieveMessage = { fileName: string; problem: string };
 /**
  * Raw response returned from a checkRetrieveStatus call to the Metadata API
  */
-export type RetrieveResult = {
-  done: boolean;
+export interface RetrieveResult extends MetadataRequestResult {
+  // done: boolean;
   fileProperties: {}[];
-  id: string;
-  status: RetrieveStatus;
-  success: boolean;
+  // id: string;
+  // status: RequestStatus;
+  // success: boolean;
   messages?: RetrieveMessage[] | RetrieveMessage;
   // this is a base64binary
   zipFile: string;
-};
+}
 
 // ------------------------------------------------
 // Tooling API result types

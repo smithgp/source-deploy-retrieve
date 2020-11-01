@@ -32,6 +32,7 @@ import {
   RetrieveStatus,
   SourceRetrieveResult,
   ComponentDiagnostic,
+  RequestStatus,
 } from '../../src/client/types';
 
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
@@ -57,7 +58,7 @@ describe('Metadata Api', () => {
 
   const deployResult: DeployResult = {
     id: '12345',
-    status: DeployStatus.Succeeded,
+    status: RequestStatus.Succeeded,
     success: true,
     details: {
       componentSuccesses: [
@@ -72,7 +73,7 @@ describe('Metadata Api', () => {
   const sourceDeployResult: SourceDeployResult = {
     id: '12345',
     success: true,
-    status: DeployStatus.Succeeded,
+    status: RequestStatus.Succeeded,
     components: [
       {
         component,
@@ -525,7 +526,7 @@ describe('Metadata Api', () => {
 
     const defaultRetrieveResult: RetrieveResult = {
       id: '12345',
-      status: RetrieveStatus.Succeeded,
+      status: RequestStatus.Succeeded,
       success: true,
       fileProperties: [],
       done: true,
@@ -605,10 +606,10 @@ describe('Metadata Api', () => {
       } as RetrieveOptions;
       const sourceRetrieveResult: SourceRetrieveResult = {
         success: true,
-        components: [{ component, status: RetrieveStatus.Succeeded }],
+        components: [{ component, status: RequestStatus.Succeeded }],
         id: '12345',
         messages: [],
-        status: RetrieveStatus.Succeeded,
+        status: RequestStatus.Succeeded,
       };
 
       const result = await metadataClient.retrieve(options);
@@ -618,7 +619,7 @@ describe('Metadata Api', () => {
     it('should return failed result without component matches in SourceRetrieveResult format', async () => {
       retrieveStatusStub.resolves({
         id: '12345',
-        status: RetrieveStatus.Succeeded,
+        status: RequestStatus.Succeeded,
         success: false,
         fileProperties: [],
         done: true,
@@ -637,7 +638,7 @@ describe('Metadata Api', () => {
         components: [],
         id: '12345',
         messages: [{ fileName: 'testComponent', problem: 'There was an error' }],
-        status: RetrieveStatus.Failed,
+        status: RequestStatus.Failed,
       };
 
       const result = await metadataClient.retrieve(options);
@@ -647,7 +648,7 @@ describe('Metadata Api', () => {
     it('should return failed result with component matches in SourceRetrieveResult format', async () => {
       retrieveStatusStub.resolves({
         id: '12345',
-        status: RetrieveStatus.Failed,
+        status: RequestStatus.Failed,
         success: false,
         fileProperties: [],
         done: true,
@@ -671,10 +672,10 @@ describe('Metadata Api', () => {
 
       const sourceRetrieveResult: SourceRetrieveResult = {
         success: false,
-        components: [{ component, status: RetrieveStatus.Failed, diagnostics }],
+        components: [{ component, status: RequestStatus.Failed, diagnostics }],
         id: '12345',
         messages: [],
-        status: RetrieveStatus.Failed,
+        status: RequestStatus.Failed,
       };
 
       const result = await metadataClient.retrieve(options);
