@@ -6,6 +6,7 @@
  */
 export { SourceClient } from './sourceClient';
 export { ToolingApi } from './toolingApi';
+export { DeployOperation, RetrieveOperation } from './metadataApiOperations';
 export {
   ApiResult,
   DeployPathOptions,

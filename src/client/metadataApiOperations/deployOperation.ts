@@ -5,115 +5,69 @@
  * For full license text, see LICENSE.txt file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
 import { Connection } from '@salesforce/core';
-import { EventEmitter } from 'events';
-import { DeployStatus } from '.';
-import { MetadataComponent } from '../common';
-import { ComponentCollection } from '../common/componentCollection';
-import { DeployError } from '../errors';
-import { SourceComponent } from '../metadata-registry';
-import { DiagnosticUtil } from './diagnosticUtil';
+import { SourceDeployResult, ComponentStatus } from '..';
+import { MetadataConverter, SourceComponent } from '../..';
+import { DiagnosticUtil } from '../diagnosticUtil';
 import {
-  ComponentDeployment,
-  ComponentStatus,
-  DeployMessage,
   DeployResult,
-  MetadataRequestResult,
-  RequestStatus,
-  RetrieveResult,
-  SourceApiResult,
-  SourceDeployResult,
-  SourceRetrieveResult,
-} from './types';
+  ComponentDeployment,
+  DeployMessage,
+  MetadataApiDeployOptions,
+} from '../types';
+import { MetadataApiOperation } from './metadataApiOperation';
 
-abstract class OrgOperation extends EventEmitter {
-  protected immediateCancel = false;
-  protected id: string;
-  protected connection: Connection;
-  private shouldCancel = false;
+export class DeployOperation extends MetadataApiOperation<DeployResult, SourceDeployResult> {
+  public static readonly DEFAULT_OPTIONS = {
+    rollbackOnError: true,
+    ignoreWarnings: false,
+    checkOnly: false,
+    singlePackage: true,
+  };
+  private components: SourceComponent[];
+  private options?: MetadataApiDeployOptions;
 
-  constructor(id: string, connection: Connection) {
-    super();
-    this.id = id;
-    this.connection = connection;
-  }
-
-  public startPolling(interval = 100): void {
-    this.pollStatus(interval);
-  }
-
-  public cancel(): void {
-    this.shouldCancel = true;
-  }
-
-  private async pollStatus(interval: number): Promise<void> {
-    let result: MetadataRequestResult;
-
-    const wait = (interval: number): Promise<void> => {
-      return new Promise((resolve) => {
-        setTimeout(resolve, interval);
-      });
-    };
-
-    let triedOnce = false;
-
-    while (true) {
-      if (this.shouldCancel) {
-        const shouldBreak = this.doCancel();
-        if (shouldBreak) {
-          result.status = RequestStatus.Canceled;
-          this.emit('finish', result);
-          return;
-        }
-      }
-
-      if (triedOnce) {
-        await wait(interval);
-      }
-
-      try {
-        result = await this.checkStatus();
-        switch (result.status) {
-          case RequestStatus.Succeeded:
-          case RequestStatus.Failed:
-          case RequestStatus.Canceled:
-            this.emit('finish', this.formatResult(result));
-            return;
-        }
-        this.emit('update', result);
-        triedOnce = true;
-      } catch (e) {
-        throw new DeployError('md_request_fail', e);
-      }
-    }
-  }
-
-  protected abstract doCancel(): Promise<boolean>;
-  protected abstract async checkStatus(): Promise<MetadataRequestResult>;
-  protected abstract formatResult(result: MetadataRequestResult): SourceApiResult;
-}
-
-export class DeployOperation extends OrgOperation {
-  protected components: SourceComponent[];
-
-  constructor(deployId: string, connection: Connection, components: SourceComponent[]) {
-    super(deployId, connection);
+  constructor(
+    connection: Connection,
+    components: SourceComponent[],
+    options?: MetadataApiDeployOptions
+  ) {
+    super(connection);
     this.components = components;
+    this.options = options || DeployOperation.DEFAULT_OPTIONS;
   }
 
   protected async doCancel(): Promise<boolean> {
-    // @ts-ignore
+    // @ts-ignore _invoke is private on the jsforce metadata object, and cancelDeploy is not an exposed method
     const { done } = this.connection.metadata._invoke('cancelDeploy', { id: this.id });
-    return false;
+    return done;
   }
 
-  protected checkStatus(): Promise<DeployResult> {
+  protected checkStatus(id: string): Promise<DeployResult> {
     // Recasting to use the library's DeployResult type
-    return (this.connection.metadata.checkDeployStatus(this.id, true) as unknown) as Promise<
+    return (this.connection.metadata.checkDeployStatus(id, true) as unknown) as Promise<
       DeployResult
     >;
   }
 
-  protected formatResult(result: DeployResult): SourceDeployResult {
+  protected async pre(): Promise<{ id: string }> {
+    const converter = new MetadataConverter();
+    const { zipBuffer } = await converter.convert(this.components, 'metadata', { type: 'zip' });
+
+    // if (!options) {
+    //   options = DeployOperation.DEFAULT_OPTIONS;
+    // } else {
+    //   for (const [property, value] of Object.entries(DEFAULT_API_OPTIONS)) {
+    //     if (!(property in options.apiOptions)) {
+    //       //@ts-ignore ignore while dynamically building the defaults
+    //       options.apiOptions[property] = value;
+    //     }
+    //   }
+    // }
+
+    return this.connection.metadata.deploy(zipBuffer, this.options);
+  }
+
+  protected async post(result: DeployResult): Promise<SourceDeployResult> {
     const componentDeploymentMap = new Map<string, ComponentDeployment>();
     for (const component of this.components) {
       componentDeploymentMap.set(`${component.type.name}:${component.fullName}`, {
@@ -190,21 +144,5 @@ export class DeployOperation extends OrgOperation {
     // lwc doesn't properly use the fullname property in the api.
     message.fullName = message.fullName.replace(/markup:\/\/c:/, '');
     return message;
-  }
-}
-
-export class RetrieveOperation extends OrgOperation {
-  protected async doCancel(): Promise<boolean> {
-    return true;
-  }
-
-  protected checkStatus(): Promise<RetrieveResult> {
-    return (this.connection.metadata.checkRetrieveStatus(this.id) as unknown) as Promise<
-      RetrieveResult
-    >;
-  }
-
-  protected formatResult(): SourceRetrieveResult {
-    throw new Error('Method not implemented.');
   }
 }

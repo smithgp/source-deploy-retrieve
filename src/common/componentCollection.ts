@@ -45,4 +45,12 @@ export class ComponentCollection<T extends MetadataComponent> {
   public getByType(type: MetadataType): T[] {
     return [...this.map.get(type.name)?.values()];
   }
+
+  get size(): number {
+    let total = 0;
+    for (const set of this.map.values()) {
+      total += set.size;
+    }
+    return total;
+  }
 }

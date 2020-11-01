@@ -5,7 +5,7 @@
  * For full license text, see LICENSE.txt file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
 import { SourcePath } from '../common';
-import { registryData } from '../metadata-registry';
+import { registryData, SourceComponent } from '../metadata-registry';
 import { basename } from 'path';
 import {
   ComponentDeployment,
@@ -25,10 +25,11 @@ export class DiagnosticUtil {
     message: string,
     componentRetrieval: ComponentRetrieval
   ): ComponentRetrieval {
+    const { component } = componentRetrieval;
     componentRetrieval.diagnostics = {
       message: message,
       type: 'Error',
-      filePath: componentRetrieval.component.content,
+      filePath: component instanceof SourceComponent ? component.content : undefined,
     };
 
     return componentRetrieval;

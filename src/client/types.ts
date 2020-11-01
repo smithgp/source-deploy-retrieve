@@ -7,7 +7,7 @@
 import { Connection } from '@salesforce/core';
 import { EventEmitter } from 'events';
 import { Subject } from 'rxjs';
-import { SourcePath } from '../common/types';
+import { MetadataComponent, SourcePath } from '../common/types';
 import { DeployError } from '../errors';
 import { MetadataResolver, RegistryAccess, SourceComponent } from '../metadata-registry';
 

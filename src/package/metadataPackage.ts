@@ -6,8 +6,12 @@
  */
 import { AuthInfo, Connection } from '@salesforce/core';
 import { parse as parseXml, j2xParser } from 'fast-xml-parser';
-import { SourceClient } from '../client';
-import { MetadataDeployOptions, SourceDeployResult, SourceRetrieveResult } from '../client/types';
+import { SourceClient, DeployOperation, RetrieveOperation } from '../client';
+import {
+  MetadataApiDeployOptions,
+  MetadataDeployOptions,
+  SourceRetrieveResult,
+} from '../client/types';
 import {
   ManifestGenerator,
   MetadataResolver,
@@ -25,7 +29,6 @@ import {
   PackageManifestContents,
 } from './types';
 import { MetadataConverter } from '../convert';
-import { DeployOperation } from '../client/orgOperation';
 
 const DEFAULT_API_OPTIONS = {
   rollbackOnError: true,
@@ -97,56 +100,45 @@ export class MetadataPackage {
 
   public async deploy(
     connection: Connection,
-    options?: MetadataDeployOptions
+    options?: MetadataApiDeployOptions
   ): Promise<DeployOperation>;
-  public async deploy(username: string, options?: MetadataDeployOptions): Promise<DeployOperation>;
+  public async deploy(
+    username: string,
+    options?: MetadataApiDeployOptions
+  ): Promise<DeployOperation>;
   public async deploy(
     auth: Connection | string,
-    options?: MetadataDeployOptions
+    options?: MetadataApiDeployOptions
   ): Promise<DeployOperation> {
     const connection = await this.getConnection(auth);
-    const converter = new MetadataConverter();
     const components = this.getSourceComponents()?.getAll();
     if (!components) {
       throw new Error('No source components to deploy');
     }
-    const { zipBuffer } = await converter.convert(components, 'metadata', { type: 'zip' });
-    if (!options || !options.apiOptions) {
-      options = {
-        apiOptions: DEFAULT_API_OPTIONS,
-      };
-    } else {
-      for (const [property, value] of Object.entries(DEFAULT_API_OPTIONS)) {
-        if (!(property in options.apiOptions)) {
-          //@ts-ignore ignore while dynamically building the defaults
-          options.apiOptions[property] = value;
-        }
-      }
-    }
-    const { id } = await connection.metadata.deploy(zipBuffer, options.apiOptions);
-    return new DeployOperation(id, connection, components);
+    return new DeployOperation(connection, components, options);
   }
 
   public async retrieve(
     connection: Connection,
-    options?: { merge?: boolean; output?: string; wait?: number }
-  ): Promise<SourceRetrieveResult>;
+    options?: { merge?: boolean; defaultDirectory?: string }
+  ): Promise<RetrieveOperation>;
   public async retrieve(
     username: string,
-    options?: { merge?: boolean; output?: string; wait?: number }
-  ): Promise<SourceRetrieveResult>;
+    options?: { merge?: boolean; defaultDirectory?: string }
+  ): Promise<RetrieveOperation>;
   public async retrieve(
     auth: Connection | string,
-    options?: { merge?: boolean; output?: string; wait?: number }
-  ): Promise<SourceRetrieveResult> {
+    options?: { merge?: boolean; defaultDirectory?: string }
+  ): Promise<RetrieveOperation> {
     const connection = await this.getConnection(auth);
-    const client = new SourceClient(connection, new MetadataResolver());
-    return client.metadata.retrieve({
-      components: this.getSourceComponents().getAll(),
-      merge: options?.merge,
-      output: options?.output,
-      wait: options?.wait,
-    });
+    return new RetrieveOperation(connection, this, options);
+    // const client = new SourceClient(connection, new MetadataResolver());
+    // return client.metadata.retrieve({
+    //   components: this.getSourceComponents().getAll(),
+    //   merge: options?.merge,
+    //   output: options?.output,
+    //   wait: options?.wait,
+    // });
   }
 
   /**
