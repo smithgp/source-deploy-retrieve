@@ -5,10 +5,7 @@
  * For full license text, see LICENSE.txt file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
 import { Connection } from '@salesforce/core';
-import { EventEmitter } from 'events';
-import { Subject } from 'rxjs';
-import { MetadataComponent, SourcePath } from '../common/types';
-import { DeployError } from '../errors';
+import { SourcePath } from '../common/types';
 import { MetadataResolver, RegistryAccess, SourceComponent } from '../metadata-registry';
 
 // ------------------------------------------------

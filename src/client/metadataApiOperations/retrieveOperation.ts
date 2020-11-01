@@ -49,6 +49,7 @@ export class RetrieveOperation extends MetadataApiOperation<RetrieveResult, Sour
   }
 
   protected checkStatus(id: string): Promise<RetrieveResult> {
+    // Recasting to use the project's RetrieveResult type
     return (this.connection.metadata.checkRetrieveStatus(id) as unknown) as Promise<RetrieveResult>;
   }
 
@@ -73,7 +74,6 @@ export class RetrieveOperation extends MetadataApiOperation<RetrieveResult, Sour
       }
       outputConfig = {
         type: 'merge',
-        // this is okay
         mergeWith: this.mdPackage.getSourceComponents()?.getAll() || [],
         defaultDirectory: this.options.defaultDirectory,
       };

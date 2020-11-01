@@ -43,7 +43,7 @@ export class DeployOperation extends MetadataApiOperation<DeployResult, SourceDe
   }
 
   protected checkStatus(id: string): Promise<DeployResult> {
-    // Recasting to use the library's DeployResult type
+    // Recasting to use the project's DeployResult type
     return (this.connection.metadata.checkDeployStatus(id, true) as unknown) as Promise<
       DeployResult
     >;

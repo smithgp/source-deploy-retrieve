@@ -132,13 +132,6 @@ export class MetadataPackage {
   ): Promise<RetrieveOperation> {
     const connection = await this.getConnection(auth);
     return new RetrieveOperation(connection, this, options);
-    // const client = new SourceClient(connection, new MetadataResolver());
-    // return client.metadata.retrieve({
-    //   components: this.getSourceComponents().getAll(),
-    //   merge: options?.merge,
-    //   output: options?.output,
-    //   wait: options?.wait,
-    // });
   }
 
   /**
