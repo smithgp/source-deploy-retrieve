@@ -6,7 +6,7 @@
  */
 import { AuthInfo, Connection } from '@salesforce/core';
 import { parse as parseXml, j2xParser } from 'fast-xml-parser';
-import { ComponentSet } from './componentSet';
+import { ComponentSet, CSet } from './componentSet';
 import { SourceClient } from '../client';
 import { MetadataDeployOptions, SourceDeployResult, SourceRetrieveResult } from '../client/types';
 import { MetadataComponent, XML_DECL, XML_NS_KEY, XML_NS_URL } from '../common';
@@ -33,7 +33,7 @@ export class WorkingSet implements MetadataSet, Iterable<MetadataComponent> {
   private static readonly WILDCARD = '*';
   public apiVersion: string;
   private registry: RegistryAccess;
-  private components = new Map<string, ComponentSet<MetadataComponent>>();
+  private components = new Map<string, CSet>();
 
   public constructor(registry = new RegistryAccess()) {
     this.registry = registry;
@@ -232,7 +232,7 @@ export class WorkingSet implements MetadataSet, Iterable<MetadataComponent> {
         members = folderMembers.get(contentTypeName);
       }
 
-      for (const { fullName } of components.values()) {
+      for (const { fullName } of components) {
         members.push(fullName);
       }
 
@@ -337,7 +337,7 @@ export class WorkingSet implements MetadataSet, Iterable<MetadataComponent> {
    *
    * entry -> [type name, component set]
    */
-  public entries(): IterableIterator<[string, ComponentSet<MetadataComponent>]> {
+  public entries(): IterableIterator<[string, CSet]> {
     return this.components.entries();
   }
 
@@ -368,7 +368,7 @@ export class WorkingSet implements MetadataSet, Iterable<MetadataComponent> {
   private setComponent(component: MetadataComponent): void {
     const { type } = component;
     if (!this.components.has(type.name)) {
-      this.components.set(type.name, new ComponentSet<MetadataComponent>());
+      this.components.set(type.name, new CSet());
     }
     this.components.get(type.name).add(component);
   }

@@ -5,7 +5,7 @@
  * For full license text, see LICENSE.txt file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
 import { WriteInfo, WriterFormat } from '../types';
-import { BaseMetadataTransformer } from './baseMetadataTransformer';
+import { MetadataTransformer } from './baseMetadataTransformer';
 import { RecompositionFinalizer, ConvertTransaction } from '../convertTransaction';
 import { DecompositionStrategy, RegistryAccess, SourceComponent } from '../../metadata-registry';
 import { JsonMap, AnyJson, JsonArray } from '@salesforce/ts-types';
@@ -20,7 +20,7 @@ interface XmlJson extends JsonMap {
   };
 }
 
-export class DecomposedMetadataTransformer extends BaseMetadataTransformer {
+export class DecomposedMetadataTransformer extends MetadataTransformer {
   constructor(registry = new RegistryAccess(), convertTransaction = new ConvertTransaction()) {
     super(registry, convertTransaction);
     this.convertTransaction.addFinalizer(RecompositionFinalizer);
@@ -111,7 +111,7 @@ export class DecomposedMetadataTransformer extends BaseMetadataTransformer {
             mergeChild?.xml ||
             join(rootPackagePath, this.getOutputPathForEntry(entryName, childType, component));
 
-          writeInfos.push({
+          this.copies.push({
             source: new JsToXml({
               [childType.name]: Object.assign({ [XML_NS_KEY]: XML_NS_URL }, value),
             }),
@@ -131,7 +131,7 @@ export class DecomposedMetadataTransformer extends BaseMetadataTransformer {
       const parentOutput =
         mergeWith?.xml ||
         join(rootPackagePath, `${parentFullName}.${type.suffix}${META_XML_SUFFIX}`);
-      writeInfos.push({
+      this.copies.push({
         source: new JsToXml(parentXmlObject),
         output: parentOutput,
       });

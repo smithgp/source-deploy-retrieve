@@ -18,7 +18,7 @@ import { ConvertTransaction } from './convertTransaction';
 import { MetadataTransformerFactory } from './transformers';
 import { JsonMap } from '@salesforce/ts-types';
 import { j2xParser } from 'fast-xml-parser';
-import { ComponentSet } from '../collections';
+import { ComponentSet, CSet } from '../collections';
 export const pipeline = promisify(cbPipeline);
 
 export class ComponentReader extends Readable {
@@ -45,13 +45,13 @@ export class ComponentConverter extends Transform {
   private targetFormat: SfdxFileFormat;
   private transaction: ConvertTransaction;
   private transformerFactory: MetadataTransformerFactory;
-  private mergeSet: ComponentSet<SourceComponent>;
+  private mergeSet: CSet;
 
   constructor(
     targetFormat: SfdxFileFormat,
     registry: RegistryAccess,
     transaction = new ConvertTransaction(),
-    mergeSet?: ComponentSet<SourceComponent>
+    mergeSet?: CSet
   ) {
     super({ objectMode: true });
     this.targetFormat = targetFormat;
@@ -69,13 +69,17 @@ export class ComponentConverter extends Transform {
     let result: WriterFormat;
     try {
       const transformer = this.transformerFactory.getTransformer(chunk);
-      const componentToMergeAgainst = this.mergeSet?.get(chunk);
+      const componentsToMergeWith = this.mergeSet?.getSourceComponents(chunk);
       switch (this.targetFormat) {
         case 'metadata':
-          result = await transformer.toMetadataFormat(chunk);
+          result = await transformer.createCopies(chunk, 'metadata');
           break;
         case 'source':
-          result = await transformer.toSourceFormat(chunk, componentToMergeAgainst);
+          result = await transformer.createCopies(
+            chunk,
+            'source',
+            componentsToMergeWith.length > 0 ? componentsToMergeWith : undefined
+          );
           break;
         default:
           throw new LibraryError('error_convert_invalid_format', this.targetFormat);

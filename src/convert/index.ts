@@ -11,5 +11,4 @@ export {
   SfdxFileFormat,
   WriteInfo,
   WriterFormat,
-  MetadataTransformer,
 } from './types';

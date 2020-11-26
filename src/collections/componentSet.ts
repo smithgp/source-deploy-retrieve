@@ -120,8 +120,8 @@ export class CSet implements MetadataSet, Iterable<MetadataComponent> {
     return set;
   }
 
-  public getSourceComponents(filter?: ComponentLike): CSet {
-    const set = new CSet();
+  public getSourceComponents(filter?: ComponentLike): SourceComponent[] {
+    const components: SourceComponent[] = [];
     for (const component of this) {
       if (component instanceof SourceComponent) {
         if (filter) {
@@ -130,14 +130,14 @@ export class CSet implements MetadataSet, Iterable<MetadataComponent> {
               ? this.registry.getTypeByName(filter.type)
               : filter.type;
           if (filter.fullName === component.fullName && filterType.id === component.type.id) {
-            set.add(component);
+            components.push(component);
           }
         } else {
-          set.add(component);
+          components.push(component);
         }
       }
     }
-    return set;
+    return components;
   }
 
   get size(): number {

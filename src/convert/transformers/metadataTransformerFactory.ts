@@ -5,13 +5,13 @@
  * For full license text, see LICENSE.txt file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
 import { RegistryError } from '../../errors';
-import { MetadataTransformer } from '../types';
 import { DefaultMetadataTransformer } from './defaultMetadataTransformer';
 import { SourceComponent } from '../../metadata-registry/sourceComponent';
 import { DecomposedMetadataTransformer } from './decomposedMetadataTransformer';
 import { ConvertTransaction } from '../convertTransaction';
 import { StaticResourceMetadataTransformer } from './staticResourceMetadataTransformer';
 import { RegistryAccess, TransformerStrategy } from '../../metadata-registry';
+import { MetadataTransformer } from './baseMetadataTransformer';
 
 export class MetadataTransformerFactory {
   private registry: RegistryAccess;

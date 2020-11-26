@@ -5,7 +5,7 @@
  * For full license text, see LICENSE.txt file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
 import { META_XML_SUFFIX, SourcePath } from '../../common';
-import { BaseMetadataTransformer } from './baseMetadataTransformer';
+import { MetadataTransformer } from './baseMetadataTransformer';
 import { SfdxFileFormat, WriterFormat } from '../types';
 import { SourceComponent } from '../../metadata-registry';
 import { trimUntil } from '../../utils/path';
@@ -18,7 +18,7 @@ import { basename, dirname, join } from 'path';
  * during the conversion process. It leaves the component's metadata xml and source
  * files as-is.
  */
-export class DefaultMetadataTransformer extends BaseMetadataTransformer {
+export class DefaultMetadataTransformer extends MetadataTransformer {
   public async toMetadataFormat(component: SourceComponent): Promise<WriterFormat> {
     return this.getWriterFormat(component, 'metadata');
   }
@@ -39,15 +39,23 @@ export class DefaultMetadataTransformer extends BaseMetadataTransformer {
 
     if (component.content) {
       for (const source of component.walkContent()) {
-        result.writeInfos.push({
+        this.copies.push({
           source: component.tree.stream(source),
           output: this.getContentSourceDestination(source, targetFormat, component, mergeWith),
         });
+        // result.writeInfos.push({
+        //   source: component.tree.stream(source),
+        //   output: this.getContentSourceDestination(source, targetFormat, component, mergeWith),
+        // });
       }
     }
 
     if (component.xml) {
-      result.writeInfos.push({
+      // result.writeInfos.push({
+      //   source: component.tree.stream(component.xml),
+      //   output: this.getXmlDestination(targetFormat, component, mergeWith),
+      // });
+      this.copies.push({
         source: component.tree.stream(component.xml),
         output: this.getXmlDestination(targetFormat, component, mergeWith),
       });

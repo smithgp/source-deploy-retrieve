@@ -4,7 +4,7 @@
  * Licensed under the BSD 3-Clause license.
  * For full license text, see LICENSE.txt file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
-import { BaseMetadataTransformer } from './baseMetadataTransformer';
+import { MetadataTransformer } from './baseMetadataTransformer';
 import { WriterFormat, WriteInfo } from '..';
 import { create as createArchive } from 'archiver';
 import { getExtension } from 'mime';
@@ -17,7 +17,7 @@ import { LibraryError } from '../../errors';
 import { SourceComponent } from '../../metadata-registry';
 import { SourcePath } from '../../common';
 
-export class StaticResourceMetadataTransformer extends BaseMetadataTransformer {
+export class StaticResourceMetadataTransformer extends MetadataTransformer {
   public static readonly ARCHIVE_MIME_TYPES = new Set([
     'application/zip',
     'application/x-zip-compressed',
