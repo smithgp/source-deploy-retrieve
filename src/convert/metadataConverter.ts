@@ -25,7 +25,7 @@ import {
 } from './streams';
 import { ConversionError, LibraryError } from '../errors';
 import { SourcePath } from '../common';
-import { ComponentSet, WorkingSet } from '../collections';
+import { ComponentSet, CSet, WorkingSet } from '../collections';
 
 export class MetadataConverter {
   public static readonly PACKAGE_XML_FILE = 'package.xml';
@@ -58,7 +58,7 @@ export class MetadataConverter {
       const tasks = [];
 
       let writer: Writable;
-      let mergeSet: ComponentSet<SourceComponent>;
+      let mergeSet: CSet;
       let packagePath: SourcePath;
 
       switch (output.type) {
@@ -81,9 +81,13 @@ export class MetadataConverter {
           if (!isSource) {
             throw new LibraryError('error_merge_metadata_target_unsupported');
           }
-          mergeSet = new ComponentSet();
-          // since child components are composed in metadata format, we need to merge using the parent
-          output.mergeWith.forEach((component) => mergeSet.add(component.parent || component));
+          mergeSet = new CSet();
+          for (const component of output.mergeWith) {
+            if (component instanceof SourceComponent) {
+              // since child components are composed in metadata format, we need to merge using the parent
+              mergeSet.add(component.parent ?? component);
+            }
+          }
           writer = new StandardWriter(output.defaultDirectory);
           break;
       }
