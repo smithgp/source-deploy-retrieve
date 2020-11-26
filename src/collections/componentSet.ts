@@ -66,8 +66,9 @@ export class CSet implements MetadataSet, Iterable<MetadataComponent> {
   private _components = new Map<string, Map<string, SourceComponent>>();
 
   constructor(options: CSetOptions = { components: [], registry: new RegistryAccess() }) {
-    this.registry = options.registry;
-    for (const component of options.components) {
+    this.registry = options.registry ?? new RegistryAccess();
+    const components = options.components ?? [];
+    for (const component of components) {
       this.add(component);
     }
   }
@@ -88,6 +89,7 @@ export class CSet implements MetadataSet, Iterable<MetadataComponent> {
 
   public get(component: ComponentLike): CSet {
     return new CSet({
+      // no
       components: this._components.get(this.simpleKey(component))?.values(),
       registry: this.registry,
     });

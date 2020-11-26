@@ -83,13 +83,10 @@ export class WorkingSet implements MetadataSet, Iterable<MetadataComponent> {
     ws.apiVersion = manifestObj.Package.version;
 
     for (const component of WorkingSet.getComponentsFromManifestObject(manifestObj, registry)) {
-      const memberIsWildcard = component.fullName === WorkingSet.WILDCARD;
       if (shouldResolve) {
         filterSet.add(component);
       }
-      if (!shouldResolve || (memberIsWildcard && options?.literalWildcard)) {
-        ws.add(component);
-      }
+      ws.add(component);
     }
 
     if (shouldResolve) {
@@ -372,7 +369,7 @@ export class WorkingSet implements MetadataSet, Iterable<MetadataComponent> {
   private setComponent(component: MetadataComponent): void {
     const { type } = component;
     if (!this.components.has(type.name)) {
-      this.components.set(type.name, new CSet());
+      this.components.set(type.name, new CSet({ registry: this.registry }));
     }
     this.components.get(type.name).add(component);
   }
