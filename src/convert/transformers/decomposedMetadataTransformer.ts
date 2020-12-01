@@ -59,8 +59,8 @@ export class DecomposedMetadataTransformer extends BaseMetadataTransformer {
   }
 
   public async toMetadataFormat(component: SourceComponent): Promise<WriterFormat> {
+    const { state } = this.convertTransaction;
     if (component.parent) {
-      const { state } = this.convertTransaction;
       const { fullName: parentName } = component.parent;
       if (!state.recompose[parentName]) {
         state.recompose[parentName] = {
@@ -69,21 +69,30 @@ export class DecomposedMetadataTransformer extends BaseMetadataTransformer {
         };
       }
       state.recompose[parentName].children.push(component);
-      // noop since the finalizer will push the writes to the component writer
-      return { component: component, writeInfos: [] };
+    } else {
+      if (!state.recompose[component.fullName]) {
+        state.recompose[component.fullName] = {
+          component,
+          children: [],
+        };
+      }
+      state.recompose[component.fullName].children.push(...component.getChildren());
     }
 
-    const recomposedXmlObj = await DecomposedMetadataTransformer.recompose(
-      component.getChildren(),
-      (await component.parseXml()) as XmlJson
-    );
+    // noop since the finalizer will push the writes to the component writer
+    return { component: component, writeInfos: [] };
 
-    const writerFormat = DecomposedMetadataTransformer.createWriterFormat(
-      component,
-      recomposedXmlObj
-    );
-    this.writes.push(...writerFormat.writeInfos);
-    return writerFormat;
+    // const recomposedXmlObj = await DecomposedMetadataTransformer.recompose(
+    //   component.getChildren(),
+    //   (await component.parseXml()) as XmlJson
+    // );
+
+    // const writerFormat = DecomposedMetadataTransformer.createWriterFormat(
+    //   component,
+    //   recomposedXmlObj
+    // );
+    // this.writes.push(...writerFormat.writeInfos);
+    // return writerFormat;
   }
 
   public async toSourceFormat(
@@ -115,12 +124,14 @@ export class DecomposedMetadataTransformer extends BaseMetadataTransformer {
           const source = new JsToXml({
             [childType.name]: Object.assign({ [XML_NS_KEY]: XML_NS_URL }, value),
           });
-          if (childComponentMergeSet?.has(childComponent)) {
-            for (const mergeChild of childComponentMergeSet.getSourceComponents(childComponent)) {
-              this.writes.push({
-                source,
-                output: mergeChild.xml,
-              });
+          if (childComponentMergeSet) {
+            if (childComponentMergeSet.has(childComponent)) {
+              for (const mergeChild of childComponentMergeSet.getSourceComponents(childComponent)) {
+                this.writes.push({
+                  source,
+                  output: mergeChild.xml,
+                });
+              }
             }
           } else {
             this.writes.push({

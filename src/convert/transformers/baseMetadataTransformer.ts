@@ -31,7 +31,7 @@ export abstract class BaseMetadataTransformer implements MetadataTransformer {
           converts.push(this.toSourceFormat(component, mergeComponent));
         }
       }
-      if (this.writes.length === 0) {
+      if (converts.length === 0) {
         converts.push(this.toSourceFormat(component));
       }
     } else {

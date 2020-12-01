@@ -73,8 +73,8 @@ export class SourceComponent implements MetadataComponent {
   }
 
   public getChildren(): SourceComponent[] {
-    return this.xml && !this.parent && this.type.children
-      ? this.getChildrenInternal(dirname(this.xml))
+    return this.content && !this.parent && this.type.children
+      ? this.getChildrenInternal(this.content)
       : [];
   }
 

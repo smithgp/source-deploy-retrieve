@@ -246,7 +246,8 @@ export class ComponentSet implements Iterable<MetadataComponent> {
     const sourceComponents = new ComponentSet();
 
     for (const component of resolved) {
-      const shouldResolve = !filterSet || filterSet.has(component);
+      const shouldResolve =
+        !filterSet || filterSet.has(component) || filterSet.has(component.parent);
       const includedInWildcard = filterSet?.has({
         fullName: ComponentSet.WILDCARD,
         type: component.type,
@@ -312,7 +313,7 @@ export class ComponentSet implements Iterable<MetadataComponent> {
   }
 
   public has(component: ComponentLike): boolean {
-    return this.components.has(this.simpleKey(component));
+    return !!component && this.components.has(this.simpleKey(component));
   }
 
   public *[Symbol.iterator](): Iterator<MetadataComponent> {

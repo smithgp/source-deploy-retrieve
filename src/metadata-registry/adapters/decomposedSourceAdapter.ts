@@ -54,6 +54,7 @@ export class DecomposedSourceAdapter extends MixedContentSourceAdapter {
     isResolvingSource?: boolean
   ): SourceComponent {
     const metaXml = parseMetadataXml(trigger);
+    const pathToContent = this.trimPathToContent(trigger);
     if (metaXml) {
       const childTypeId = this.type.children.suffixes[metaXml.suffix];
       const triggerIsAChild = !!childTypeId;
@@ -66,8 +67,9 @@ export class DecomposedSourceAdapter extends MixedContentSourceAdapter {
         if (!parent) {
           parent = new SourceComponent(
             {
-              name: baseName(this.trimPathToContent(trigger)),
+              name: baseName(pathToContent),
               type: this.type,
+              content: pathToContent,
             },
             this.tree,
             this.forceIgnore
@@ -83,6 +85,9 @@ export class DecomposedSourceAdapter extends MixedContentSourceAdapter {
           this.tree,
           this.forceIgnore
         );
+      }
+      if (!triggerIsAChild) {
+        component.content = pathToContent;
       }
     }
     return component;
