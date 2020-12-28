@@ -23,21 +23,25 @@ import {
   PackageManifestObject,
   SourceComponentOptions,
 } from './types';
-import { ComponentLike } from '../common/types';
+import { ComponentLike, MetadataType } from '../common/types';
+import { LazyCollection } from './lazyCollection';
 
-export class ComponentSet implements Iterable<MetadataComponent> {
+export class ComponentSet extends LazyCollection<MetadataComponent> {
   private static readonly WILDCARD = '*';
   private static readonly KEY_DELIMITER = '#';
   public apiVersion: string;
   private registry: RegistryAccess;
   private components = new Map<string, Map<string, SourceComponent>>();
+  private flush: Iterator<ComponentLike>;
 
   public constructor(components: Iterable<ComponentLike> = [], registry = new RegistryAccess()) {
+    super();
     this.registry = registry;
     this.apiVersion = this.registry.apiVersion;
-    for (const component of components) {
-      this.add(component);
-    }
+    this.flush = components[Symbol.iterator]();
+    // for (const component of components) {
+    //   this.add(component);
+    // }
   }
 
   /**
@@ -163,9 +167,9 @@ export class ComponentSet implements Iterable<MetadataComponent> {
     output: string,
     options?: { merge?: boolean; wait?: number }
   ): Promise<SourceRetrieveResult> {
-    if (this.size === 0) {
-      throw new ComponentSetError('error_no_components_to_retrieve');
-    }
+    // if (this.size === 0) {
+    //   throw new ComponentSetError('error_no_components_to_retrieve');
+    // }
     const connection = await this.getConnection(usernameOrConnection);
     const client = new SourceClient(connection, new MetadataResolver());
     return client.metadata.retrieve({
@@ -181,19 +185,16 @@ export class ComponentSet implements Iterable<MetadataComponent> {
    */
   public getObject(): PackageManifestObject {
     const typeMap = new Map<string, string[]>();
-    for (const key of this.components.keys()) {
-      const [typeId, fullName] = key.split(ComponentSet.KEY_DELIMITER);
-      let type = this.registry.getTypeByName(typeId);
-
-      if (type.folderContentType) {
-        type = this.registry.getTypeByName(type.folderContentType);
-      }
+    for (const component of this) {
+      const type = component.type.folderContentType
+        ? this.registry.getTypeByName(component.type.folderContentType)
+        : component.type;
 
       if (!typeMap.has(type.name)) {
         typeMap.set(type.name, []);
       }
 
-      typeMap.get(type.name).push(fullName);
+      typeMap.get(type.name).push(component.fullName);
     }
 
     const typeMembers: PackageTypeMembers[] = [];
@@ -284,14 +285,19 @@ export class ComponentSet implements Iterable<MetadataComponent> {
     }
   }
 
-  public add(component: ComponentLike): void {
+  public add(component: ComponentLike): boolean {
     const key = this.simpleKey(component);
+    let added = false;
     if (!this.components.has(key)) {
+      added = true;
       this.components.set(key, new Map<string, SourceComponent>());
     }
     if (component instanceof SourceComponent) {
-      this.components.get(key).set(this.sourceKey(component), component);
+      const sourceKey = this.sourceKey(component);
+      added = !this.components.get(key).has(sourceKey);
+      this.components.get(key).set(sourceKey, component);
     }
+    return added;
   }
 
   public has(component: ComponentLike): boolean {
@@ -311,6 +317,14 @@ export class ComponentSet implements Iterable<MetadataComponent> {
           yield component;
         }
       }
+    }
+
+    let next = this.flush.next();
+    while (!next.done) {
+      if (this.add(next.value)) {
+        yield next.value;
+      }
+      next = this.flush.next();
     }
   }
 

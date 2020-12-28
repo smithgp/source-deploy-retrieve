@@ -43,6 +43,11 @@ import {
   TARAJI_VIRTUAL_FS,
   TARAJI_XML_PATHS,
 } from '../mock/registry/tarajiConstants';
+import { resolveSource } from '../../src/metadata-registry/metadataResolver';
+import { createSandbox } from 'sinon';
+import { SourceAdapterFactory } from '../../src/metadata-registry/adapters/sourceAdapterFactory';
+
+const env = createSandbox();
 
 const testUtil = new RegistryTestUtil();
 
@@ -57,7 +62,7 @@ describe('MetadataResolver', () => {
         const path = keanu.KEANU_SOURCE_PATHS[0];
 
         assert.throws(
-          () => resolver.getComponentsFromPath(path),
+          () => resolveSource(path).toArray(),
           TypeInferenceError,
           nls.localize('error_path_not_found', [path])
         );
@@ -65,12 +70,15 @@ describe('MetadataResolver', () => {
 
       it('Should determine type for metadata file with known suffix', () => {
         const path = keanu.KEANU_XML_PATHS[0];
-        const access = testUtil.createMetadataResolver([
-          {
-            dirPath: keanu.KEANUS_DIR,
-            children: [keanu.KEANU_SOURCE_NAMES[0], keanu.KEANU_XML_NAMES[0]],
-          },
-        ]);
+        const components = resolveSource(path, {
+          registry: mockRegistry,
+          tree: new VirtualTreeContainer([
+            {
+              dirPath: keanu.KEANUS_DIR,
+              children: [keanu.KEANU_SOURCE_NAMES[0], keanu.KEANU_XML_NAMES[0]],
+            },
+          ]),
+        }).toArray();
         testUtil.stubAdapters([
           {
             type: mockRegistryData.types.keanureeves,
@@ -82,51 +90,49 @@ describe('MetadataResolver', () => {
             ],
           },
         ]);
-        expect(access.getComponentsFromPath(path)).to.deep.equal([keanu.KEANU_COMPONENT]);
+        expect(components).to.deep.equal([keanu.KEANU_COMPONENT]);
       });
 
       it('Should determine type for source file with known suffix', () => {
         const path = keanu.KEANU_SOURCE_PATHS[0];
-        const access = testUtil.createMetadataResolver([
-          {
-            dirPath: keanu.KEANUS_DIR,
-            children: [keanu.KEANU_SOURCE_NAMES[0], keanu.KEANU_XML_NAMES[0]],
-          },
-        ]);
         testUtil.stubAdapters([
           {
             type: mockRegistryData.types.keanureeves,
             componentMappings: [{ path, component: keanu.KEANU_COMPONENT }],
           },
         ]);
-        expect(access.getComponentsFromPath(path)).to.deep.equal([keanu.KEANU_COMPONENT]);
+
+        const components = resolveSource(path, {
+          registry: mockRegistry,
+          tree: new VirtualTreeContainer([
+            {
+              dirPath: keanu.KEANUS_DIR,
+              children: [keanu.KEANU_SOURCE_NAMES[0], keanu.KEANU_XML_NAMES[0]],
+            },
+          ]),
+        }).toArray();
+
+        expect(components).to.deep.equal([keanu.KEANU_COMPONENT]);
       });
 
       it('Should determine type for path of mixed content type', () => {
         const path = taraji.TARAJI_SOURCE_PATHS[1];
-        const access = testUtil.createMetadataResolver([
-          {
-            dirPath: dirname(path),
-            children: [basename(path)],
-          },
-        ]);
-        testUtil.stubAdapters([
-          {
-            type: mockRegistryData.types.tarajihenson,
-            componentMappings: [{ path, component: taraji.TARAJI_COMPONENT }],
-          },
-        ]);
-        expect(access.getComponentsFromPath(path)).to.deep.equal([taraji.TARAJI_COMPONENT]);
+
+        const components = resolveSource(path, {
+          registry: mockRegistry,
+          tree: new VirtualTreeContainer([
+            {
+              dirPath: dirname(path),
+              children: [basename(path)],
+            },
+          ]),
+        }).toArray();
+
+        expect(components).to.deep.equal([taraji.TARAJI_COMPONENT]);
       });
 
       it('Should determine type for path content files', () => {
         const path = keanu.KEANU_SOURCE_PATHS[0];
-        const access = testUtil.createMetadataResolver([
-          {
-            dirPath: dirname(path),
-            children: keanu.KEANU_SOURCE_NAMES,
-          },
-        ]);
         testUtil.stubAdapters([
           {
             type: mockRegistryData.types.keanureeves,
@@ -134,17 +140,22 @@ describe('MetadataResolver', () => {
             allowContent: false,
           },
         ]);
-        expect(access.getComponentsFromPath(path)).to.deep.equal([keanu.KEANU_CONTENT_COMPONENT]);
+
+        const components = resolveSource(path, {
+          registry: mockRegistry,
+          tree: new VirtualTreeContainer([
+            {
+              dirPath: dirname(path),
+              children: [basename(path)],
+            },
+          ]),
+        });
+
+        expect(components.toArray()).to.deep.equal([keanu.KEANU_CONTENT_COMPONENT]);
       });
 
       it('Should determine type for inFolder path content files', () => {
         const path = sean.SEAN_FOLDER;
-        const access = testUtil.createMetadataResolver([
-          {
-            dirPath: path,
-            children: sean.SEAN_NAMES,
-          },
-        ]);
         const componentMappings = sean.SEAN_PATHS.map((p: string, i: number) => ({
           path: p,
           component: sean.SEAN_COMPONENTS[i],
@@ -156,17 +167,22 @@ describe('MetadataResolver', () => {
             allowContent: false,
           },
         ]);
-        expect(access.getComponentsFromPath(path)).to.deep.equal(sean.SEAN_COMPONENTS);
+
+        const components = resolveSource(path, {
+          registry: mockRegistry,
+          tree: new VirtualTreeContainer([
+            {
+              dirPath: path,
+              children: sean.SEAN_NAMES,
+            },
+          ]),
+        });
+
+        expect(components.toArray()).to.deep.equal(sean.SEAN_COMPONENTS);
       });
 
       it('Should determine type for folder files', () => {
         const path = gene.GENE_DIR;
-        const access = testUtil.createMetadataResolver([
-          {
-            dirPath: path,
-            children: [gene.GENE_FOLDER_XML_NAME],
-          },
-        ]);
         testUtil.stubAdapters([
           {
             type: mockRegistryData.types.genewilder,
@@ -176,25 +192,41 @@ describe('MetadataResolver', () => {
             allowContent: false,
           },
         ]);
-        expect(access.getComponentsFromPath(path)).to.deep.equal([gene.GENE_FOLDER_COMPONENT]);
+
+        const components = resolveSource(path, {
+          registry: mockRegistry,
+          tree: new VirtualTreeContainer([
+            {
+              dirPath: path,
+              children: [gene.GENE_FOLDER_XML_NAME],
+            },
+          ]),
+        });
+
+        expect(components.toArray()).to.deep.equal([gene.GENE_FOLDER_COMPONENT]);
       });
 
       it('Should not mistake folder component of a mixed content type as that type', () => {
-        // this test has coveage on non-mixedContent types as well by nature of the execution path
+        // this test has coverage on non-mixedContent types as well by nature of the execution path
         const path = tina.TINA_FOLDER_XML;
-        const access = testUtil.createMetadataResolver([
-          {
-            dirPath: tina.TINA_DIR,
-            children: [basename(path)],
-          },
-        ]);
         testUtil.stubAdapters([
           {
             type: mockRegistryData.types.tinafeyfolder,
             componentMappings: [{ path, component: tina.TINA_FOLDER_COMPONENT }],
           },
         ]);
-        expect(access.getComponentsFromPath(path)).to.deep.equal([tina.TINA_FOLDER_COMPONENT]);
+
+        const components = resolveSource(path, {
+          registry: mockRegistry,
+          tree: new VirtualTreeContainer([
+            {
+              dirPath: tina.TINA_DIR,
+              children: [basename(path)],
+            },
+          ]),
+        });
+
+        expect(components).to.deep.equal([tina.TINA_FOLDER_COMPONENT]);
       });
 
       it('Should throw type id error if one could not be determined', () => {
