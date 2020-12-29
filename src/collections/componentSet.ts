@@ -25,8 +25,11 @@ import {
 } from './types';
 import { ComponentLike, MetadataType } from '../common/types';
 import { LazyCollection } from './lazyCollection';
+import { resolveSource } from '../metadata-registry/metadataResolver';
 
-export class ComponentSet extends LazyCollection<MetadataComponent> {
+export class ComponentSet<T extends MetadataComponent = MetadataComponent> extends LazyCollection<
+  T
+> {
   private static readonly WILDCARD = '*';
   private static readonly KEY_DELIMITER = '#';
   public apiVersion: string;
@@ -49,6 +52,7 @@ export class ComponentSet extends LazyCollection<MetadataComponent> {
    *
    * @param fsPath Path to resolve components from
    * @param options
+   * @deprecated use `resolveSource()`
    */
   public static fromSource(fsPath: string, options?: FromSourceOptions): ComponentSet {
     const ws = new ComponentSet(undefined, options?.registry);
@@ -225,8 +229,7 @@ export class ComponentSet extends LazyCollection<MetadataComponent> {
     }
 
     // TODO: move filter logic to resolver W-8023153
-    const resolver = new MetadataResolver(this.registry, options?.tree);
-    const resolved = resolver.getComponentsFromPath(fsPath);
+    const resolved = resolveSource(fsPath, { registry: this.registry, tree: options?.tree });
     const sourceComponents = new ComponentSet();
 
     for (const component of resolved) {
@@ -304,17 +307,17 @@ export class ComponentSet extends LazyCollection<MetadataComponent> {
     return this.components.has(this.simpleKey(component));
   }
 
-  public *[Symbol.iterator](): Iterator<MetadataComponent> {
+  public *[Symbol.iterator](): Iterator<T> {
     for (const [key, sourceComponents] of this.components.entries()) {
       if (sourceComponents.size === 0) {
         const [typeName, fullName] = key.split(ComponentSet.KEY_DELIMITER);
         yield {
           fullName,
           type: this.registry.getTypeByName(typeName),
-        };
+        } as T;
       } else {
         for (const component of sourceComponents.values()) {
-          yield component;
+          yield (component as unknown) as T;
         }
       }
     }

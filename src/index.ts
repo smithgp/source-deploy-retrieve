@@ -24,7 +24,7 @@ export { MetadataConverter, ConvertOutputConfig, ConvertResult } from './convert
 export {
   MetadataResolver,
   registryData,
-  ManifestGenerator,
+  // ManifestGenerator,
   BaseTreeContainer,
   VirtualTreeContainer,
   ZipTreeContainer,

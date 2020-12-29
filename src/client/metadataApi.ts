@@ -30,6 +30,7 @@ import { DiagnosticUtil } from './diagnosticUtil';
 import { MetadataComponent, SourcePath } from '../common';
 import { ZipTreeContainer } from '../metadata-registry/treeContainers';
 import { ComponentSet } from '../collections';
+import { resolveSource } from '../metadata-registry/metadataResolver';
 
 export const DEFAULT_API_OPTIONS = {
   rollbackOnError: true,
@@ -68,7 +69,7 @@ export class MetadataApi extends BaseApi {
     paths: SourcePath,
     options?: MetadataDeployOptions
   ): Promise<SourceDeployResult> {
-    const components = this.resolver.getComponentsFromPath(paths);
+    const components = resolveSource(paths, { registry: this.registry }).toArray();
     return this.deploy(components, options);
   }
 
@@ -87,8 +88,13 @@ export class MetadataApi extends BaseApi {
     const retrieveRequest = this.formatRetrieveRequest(options.components);
     const retrieveResult = await this.getRetrievedResult(retrieveRequest, options);
     if (retrieveResult.status === RetrieveStatus.Succeeded) {
-      const tree = await ZipTreeContainer.create(Buffer.from(retrieveResult.zipFile, 'base64'));
-      const zipComponents = new MetadataResolver(undefined, tree).getComponentsFromPath('.');
+      // const tree = await ZipTreeContainer.create(Buffer.from(retrieveResult.zipFile, 'base64'));
+      // const zipComponents = new MetadataResolver(undefined,
+      // tree).getComponentsFromPath('.');
+      const zipBuffer = Buffer.from(retrieveResult.zipFile, 'base64');
+      const zipComponents = resolveSource('.', {
+        tree: await ZipTreeContainer.create(zipBuffer),
+      }).toArray();
       components = await this.getConvertedComponents(zipComponents, options);
     }
 

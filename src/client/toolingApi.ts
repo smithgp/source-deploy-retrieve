@@ -22,6 +22,7 @@ import {
   RetrieveStatus,
 } from './types';
 import { ComponentSet } from '../collections';
+import { resolveSource } from '../metadata-registry/metadataResolver';
 
 const retrieveTypes = new Set([
   'ApexClass',
@@ -138,6 +139,6 @@ export class ToolingApi extends BaseApi {
     path: SourcePath,
     options?: ToolingDeployOptions
   ): Promise<SourceDeployResult> {
-    return this.deploy(this.resolver.getComponentsFromPath(path), options);
+    return this.deploy(resolveSource(path).toArray(), options);
   }
 }

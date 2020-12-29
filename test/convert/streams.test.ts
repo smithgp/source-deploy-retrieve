@@ -9,6 +9,7 @@ import * as fs from 'fs';
 import * as archiver from 'archiver';
 import * as streams from '../../src/convert/streams';
 import * as fsUtil from '../../src/utils/fileSystemHandler';
+import * as resolve from '../../src/metadata-registry/metadataResolver';
 import { expect } from 'chai';
 import { basename, join, sep } from 'path';
 import { createSandbox, SinonStub } from 'sinon';
@@ -280,15 +281,15 @@ describe('Streams', () => {
     let pipelineStub: SinonStub;
 
     describe('StandardWriter', () => {
-      const resolver = new MetadataResolver(mockRegistry, chunk.component.tree);
-      const resolverSpy = env.spy(resolver, 'getComponentsFromPath');
+      const resolveOptions = { registry: mockRegistry, tree: chunk.component.tree };
+      const resolverSpy = env.spy(resolve, 'resolveSource');
 
       let writer: streams.StandardWriter;
 
       let ensureFile: SinonStub;
 
       beforeEach(() => {
-        writer = new streams.StandardWriter(rootDestination, resolver);
+        writer = new streams.StandardWriter(rootDestination, resolveOptions);
         ensureFile = env.stub(fsUtil, 'ensureFileExists');
         pipelineStub = env.stub(streams, 'pipeline');
         env
@@ -368,7 +369,7 @@ describe('Streams', () => {
         await writer._write(chunk, '', (err: Error) => {
           expect(err).to.be.undefined;
           const destination = join(rootDestination, component.type.directoryName);
-          const expected = resolver.getComponentsFromPath(destination);
+          const expected = resolve.resolveSource(destination, resolveOptions);
           expect(writer.converted).to.deep.equal(expected);
         });
       });

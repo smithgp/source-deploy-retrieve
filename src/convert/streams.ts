@@ -19,6 +19,8 @@ import { JsonMap } from '@salesforce/ts-types';
 import { j2xParser } from 'fast-xml-parser';
 import { ComponentSet } from '../collections';
 import { LibraryError } from '../errors';
+import { resolveSource } from '../metadata-registry/metadataResolver';
+import { ResolveSourceOptions } from '../metadata-registry/types';
 export const pipeline = promisify(cbPipeline);
 
 export class ComponentReader extends Readable {
@@ -134,11 +136,11 @@ export abstract class ComponentWriter extends Writable {
 
 export class StandardWriter extends ComponentWriter {
   public converted: SourceComponent[] = [];
-  private resolver: MetadataResolver;
+  private resolveOptions: ResolveSourceOptions;
 
-  constructor(rootDestination: SourcePath, resolver = new MetadataResolver()) {
+  constructor(rootDestination: SourcePath, resolveOptions?: ResolveSourceOptions) {
     super(rootDestination);
-    this.resolver = resolver;
+    this.resolveOptions = resolveOptions;
   }
 
   public async _write(
@@ -164,7 +166,7 @@ export class StandardWriter extends ComponentWriter {
         // every component has been written to the destination. This await ensures the microtask
         // queue is empty when that call exits and overall less memory is consumed.
         await Promise.all(writeTasks);
-        this.converted.push(...this.resolver.getComponentsFromPath(resolvePath));
+        this.converted.push(...resolveSource(resolvePath, this.resolveOptions));
       } catch (e) {
         err = e;
       }

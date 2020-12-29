@@ -6,7 +6,7 @@
  */
 
 import { MetadataType, SourcePath } from '../common/types';
-import { SourceComponent } from '.';
+import { RegistryAccess, SourceComponent } from '.';
 import { Readable } from 'stream';
 
 /**
@@ -99,4 +99,9 @@ export interface TreeContainer {
   find(fileType: 'content' | 'metadata', fullName: string, dir: SourcePath): SourcePath | undefined;
   readFile(fsPath: SourcePath): Promise<Buffer>;
   stream(fsPath: SourcePath): Readable;
+}
+
+export interface ResolveSourceOptions {
+  tree?: TreeContainer;
+  registry?: RegistryAccess;
 }

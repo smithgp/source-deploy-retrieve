@@ -58,7 +58,7 @@ describe('MetadataResolver', () => {
     afterEach(() => testUtil.restore());
 
     describe('File Paths', () => {
-      it('Should throw file not found error if given path does not exist', () => {
+      it('should throw file not found error if given path does not exist', () => {
         const path = keanu.KEANU_SOURCE_PATHS[0];
 
         assert.throws(
@@ -68,7 +68,7 @@ describe('MetadataResolver', () => {
         );
       });
 
-      it('Should determine type for metadata file with known suffix', () => {
+      it('should determine type for metadata file with known suffix', () => {
         const path = keanu.KEANU_XML_PATHS[0];
         const components = resolveSource(path, {
           registry: mockRegistry,
@@ -93,7 +93,7 @@ describe('MetadataResolver', () => {
         expect(components).to.deep.equal([keanu.KEANU_COMPONENT]);
       });
 
-      it('Should determine type for source file with known suffix', () => {
+      it('should determine type for source file with known suffix', () => {
         const path = keanu.KEANU_SOURCE_PATHS[0];
         testUtil.stubAdapters([
           {
@@ -115,7 +115,7 @@ describe('MetadataResolver', () => {
         expect(components).to.deep.equal([keanu.KEANU_COMPONENT]);
       });
 
-      it('Should determine type for path of mixed content type', () => {
+      it('should determine type for path of mixed content type', () => {
         const path = taraji.TARAJI_SOURCE_PATHS[1];
 
         const components = resolveSource(path, {
@@ -131,7 +131,7 @@ describe('MetadataResolver', () => {
         expect(components).to.deep.equal([taraji.TARAJI_COMPONENT]);
       });
 
-      it('Should determine type for path content files', () => {
+      it('should determine type for path content files', () => {
         const path = keanu.KEANU_SOURCE_PATHS[0];
         testUtil.stubAdapters([
           {
@@ -154,7 +154,7 @@ describe('MetadataResolver', () => {
         expect(components.toArray()).to.deep.equal([keanu.KEANU_CONTENT_COMPONENT]);
       });
 
-      it('Should determine type for inFolder path content files', () => {
+      it('should determine type for inFolder path content files', () => {
         const path = sean.SEAN_FOLDER;
         const componentMappings = sean.SEAN_PATHS.map((p: string, i: number) => ({
           path: p,
@@ -181,7 +181,7 @@ describe('MetadataResolver', () => {
         expect(components.toArray()).to.deep.equal(sean.SEAN_COMPONENTS);
       });
 
-      it('Should determine type for folder files', () => {
+      it('should determine type for folder files', () => {
         const path = gene.GENE_DIR;
         testUtil.stubAdapters([
           {
@@ -206,7 +206,7 @@ describe('MetadataResolver', () => {
         expect(components.toArray()).to.deep.equal([gene.GENE_FOLDER_COMPONENT]);
       });
 
-      it('Should not mistake folder component of a mixed content type as that type', () => {
+      it('should not mistake folder component of a mixed content type as that type', () => {
         // this test has coverage on non-mixedContent types as well by nature of the execution path
         const path = tina.TINA_FOLDER_XML;
         testUtil.stubAdapters([
@@ -229,29 +229,28 @@ describe('MetadataResolver', () => {
         expect(components).to.deep.equal([tina.TINA_FOLDER_COMPONENT]);
       });
 
-      it('Should throw type id error if one could not be determined', () => {
-        const missing = join('path', 'to', 'whatever', 'a.b-meta.xml');
-        const access = testUtil.createMetadataResolver([
-          {
-            dirPath: dirname(missing),
-            children: [basename(missing)],
-          },
-        ]);
+      it('should throw type id error if one could not be determined', () => {
+        const path = join('path', 'to', 'whatever', 'a.b-meta.xml');
+
+        const components = resolveSource(path, {
+          registry: mockRegistry,
+          tree: new VirtualTreeContainer([
+            {
+              dirPath: dirname(path),
+              children: [basename(path)],
+            },
+          ]),
+        });
+
         assert.throws(
-          () => access.getComponentsFromPath(missing),
+          () => components.toArray(),
           TypeInferenceError,
-          nls.localize('error_could_not_infer_type', [missing])
+          nls.localize('error_could_not_infer_type', [path])
         );
       });
 
-      it('Should not return a component if path to metadata xml is forceignored', () => {
+      it('should not return a component if path to metadata xml is forceignored', () => {
         const path = keanu.KEANU_XML_PATHS[0];
-        const access = testUtil.createMetadataResolver([
-          {
-            dirPath: dirname(path),
-            children: [basename(path)],
-          },
-        ]);
         testUtil.stubForceIgnore({ seed: path, deny: [path] });
         testUtil.stubAdapters([
           {
@@ -260,17 +259,22 @@ describe('MetadataResolver', () => {
             componentMappings: [{ path, component: keanu.KEANU_COMPONENT }],
           },
         ]);
-        expect(access.getComponentsFromPath(path).length).to.equal(0);
+
+        const components = resolveSource(path, {
+          registry: mockRegistry,
+          tree: new VirtualTreeContainer([
+            {
+              dirPath: dirname(path),
+              children: [basename(path)],
+            },
+          ]),
+        });
+
+        expect(components.size).to.equal(0);
       });
 
-      it('Should not return a component if path to content metadata xml is forceignored', () => {
+      it('should not return a component if path to content metadata xml is forceignored', () => {
         const path = keanu.KEANU_XML_PATHS[0];
-        const access = testUtil.createMetadataResolver([
-          {
-            dirPath: dirname(path),
-            children: [basename(path)],
-          },
-        ]);
         testUtil.stubForceIgnore({ seed: path, deny: [path] });
         testUtil.stubAdapters([
           {
@@ -279,17 +283,22 @@ describe('MetadataResolver', () => {
             componentMappings: [{ path, component: keanu.KEANU_COMPONENT }],
           },
         ]);
-        expect(access.getComponentsFromPath(path).length).to.equal(0);
+
+        const components = resolveSource(path, {
+          registry: mockRegistry,
+          tree: new VirtualTreeContainer([
+            {
+              dirPath: dirname(path),
+              children: [basename(path)],
+            },
+          ]),
+        });
+
+        expect(components.size).to.equal(0);
       });
 
-      it('Should not return a component if path to folder metadata xml is forceignored', () => {
+      it('should not return a component if path to folder metadata xml is forceignored', () => {
         const path = gene.GENE_FOLDER_XML_PATH;
-        const access = testUtil.createMetadataResolver([
-          {
-            dirPath: dirname(path),
-            children: [basename(path)],
-          },
-        ]);
         testUtil.stubForceIgnore({ seed: path, deny: [path] });
         testUtil.stubAdapters([
           {
@@ -300,18 +309,24 @@ describe('MetadataResolver', () => {
             ],
           },
         ]);
-        expect(access.getComponentsFromPath(path).length).to.equal(0);
+
+        const components = resolveSource(path, {
+          registry: mockRegistry,
+          tree: new VirtualTreeContainer([
+            {
+              dirPath: dirname(path),
+              children: [basename(path)],
+            },
+          ]),
+        });
+
+        expect(components.size).to.equal(0);
       });
     });
 
     describe('Directory Paths', () => {
-      it('Should return all components in a directory', () => {
-        const access = testUtil.createMetadataResolver([
-          {
-            dirPath: kathy.KATHY_FOLDER,
-            children: kathy.KATHY_XML_NAMES,
-          },
-        ]);
+      it('should return all components in a directory', () => {
+        const path = kathy.KATHY_FOLDER;
         const componentMappings = kathy.KATHY_XML_PATHS.map((p: string, i: number) => ({
           path: p,
           component: kathy.KATHY_COMPONENTS[i],
@@ -322,12 +337,21 @@ describe('MetadataResolver', () => {
             componentMappings,
           },
         ]);
-        expect(access.getComponentsFromPath(kathy.KATHY_FOLDER)).to.deep.equal(
-          kathy.KATHY_COMPONENTS
-        );
+
+        const components = resolveSource(path, {
+          registry: mockRegistry,
+          tree: new VirtualTreeContainer([
+            {
+              dirPath: kathy.KATHY_FOLDER,
+              children: kathy.KATHY_XML_NAMES,
+            },
+          ]),
+        });
+
+        expect(components.toArray()).to.deep.equal(kathy.KATHY_COMPONENTS);
       });
 
-      it('Should walk all file and directory children', () => {
+      it('should walk all file and directory children', () => {
         const { KEANUS_DIR } = keanu;
         const stuffDir = join(KEANUS_DIR, 'hasStuff');
         const noStuffDir = join(KEANUS_DIR, 'noStuff');
@@ -373,7 +397,7 @@ describe('MetadataResolver', () => {
           },
           tree
         );
-        const access = new MetadataResolver(mockRegistry, tree);
+        // const access = new MetadataResolver(mockRegistry, tree);
         testUtil.stubAdapters([
           {
             type: mockRegistryData.types.kathybates,
@@ -398,20 +422,17 @@ describe('MetadataResolver', () => {
             ],
           },
         ]);
-        expect(access.getComponentsFromPath(KEANUS_DIR)).to.deep.equal([
+
+        const components = resolveSource(KEANUS_DIR, { registry: mockRegistry, tree });
+
+        expect(components.toArray()).to.deep.equal([
           keanu.KEANU_COMPONENT,
           kathyComponent2,
           keanuComponent2,
         ]);
       });
 
-      it('Should handle the folder of a mixed content folder type', () => {
-        const access = testUtil.createMetadataResolver([
-          {
-            dirPath: tina.TINA_FOLDER,
-            children: tina.TINA_XML_NAMES.concat(tina.TINA_SOURCE_NAMES),
-          },
-        ]);
+      it('should handle the folder of a mixed content folder type', () => {
         testUtil.stubAdapters([
           {
             type: mockRegistryData.types.tinafey,
@@ -427,24 +448,25 @@ describe('MetadataResolver', () => {
             ],
           },
         ]);
-        expect(access.getComponentsFromPath(tina.TINA_FOLDER)).to.deep.equal([
+
+        const components = resolveSource(tina.TINA_FOLDER, {
+          registry: mockRegistry,
+          tree: new VirtualTreeContainer([
+            {
+              dirPath: tina.TINA_FOLDER,
+              children: tina.TINA_XML_NAMES.concat(tina.TINA_SOURCE_NAMES),
+            },
+          ]),
+        });
+
+        expect(components.toArray()).to.deep.equal([
           tina.TINA_COMPONENTS[0],
           tina.TINA_COMPONENTS[1],
         ]);
       });
 
-      it('Should return a component for a directory that is content or a child of content', () => {
+      it('should return a component for a directory that is content or a child of content', () => {
         const { TARAJI_CONTENT_PATH } = taraji;
-        const access = testUtil.createMetadataResolver([
-          {
-            dirPath: TARAJI_CONTENT_PATH,
-            children: [],
-          },
-          {
-            dirPath: taraji.TARAJI_DIR,
-            children: [taraji.TARAJI_XML_NAMES[0], basename(TARAJI_CONTENT_PATH)],
-          },
-        ]);
         testUtil.stubAdapters([
           {
             type: mockRegistryData.types.tarajihenson,
@@ -456,23 +478,26 @@ describe('MetadataResolver', () => {
             ],
           },
         ]);
-        expect(access.getComponentsFromPath(TARAJI_CONTENT_PATH)).to.deep.equal([
-          taraji.TARAJI_COMPONENT,
-        ]);
+
+        const components = resolveSource(TARAJI_CONTENT_PATH, {
+          registry: mockRegistry,
+          tree: new VirtualTreeContainer([
+            {
+              dirPath: TARAJI_CONTENT_PATH,
+              children: [],
+            },
+            {
+              dirPath: taraji.TARAJI_DIR,
+              children: [taraji.TARAJI_XML_NAMES[0], basename(TARAJI_CONTENT_PATH)],
+            },
+          ]),
+        });
+
+        expect(components.toArray()).to.deep.equal([taraji.TARAJI_COMPONENT]);
       });
 
-      it('Should not add duplicates of a component when the content has multiple -meta.xmls', () => {
+      it('should not add duplicates of a component when the content has multiple -meta.xmls', () => {
         const { SIMON_COMPONENT, SIMON_BUNDLE_PATH } = simon;
-        const access = testUtil.createMetadataResolver([
-          {
-            dirPath: simon.SIMON_DIR,
-            children: [basename(SIMON_BUNDLE_PATH)],
-          },
-          {
-            dirPath: SIMON_BUNDLE_PATH,
-            children: simon.SIMON_SOURCE_PATHS.concat(simon.SIMON_XML_PATH).map((p) => basename(p)),
-          },
-        ]);
         testUtil.stubAdapters([
           {
             type: mockRegistryData.types.simonpegg,
@@ -486,11 +511,27 @@ describe('MetadataResolver', () => {
             ],
           },
         ]);
-        expect(access.getComponentsFromPath(simon.SIMON_DIR)).to.deep.equal([SIMON_COMPONENT]);
+
+        const components = resolveSource(simon.SIMON_DIR, {
+          registry: mockRegistry,
+          tree: new VirtualTreeContainer([
+            {
+              dirPath: simon.SIMON_DIR,
+              children: [basename(SIMON_BUNDLE_PATH)],
+            },
+            {
+              dirPath: SIMON_BUNDLE_PATH,
+              children: simon.SIMON_SOURCE_PATHS.concat(simon.SIMON_XML_PATH).map((p) =>
+                basename(p)
+              ),
+            },
+          ]),
+        });
+
+        expect(components.toArray()).to.deep.equal([SIMON_COMPONENT]);
       });
 
-      it('Should not add duplicate component if directory content and xml are at the same level', () => {
-        const access = testUtil.createMetadataResolver(TARAJI_VIRTUAL_FS);
+      it('should not add duplicate component if directory content and xml are at the same level', () => {
         const component = SourceComponent.createVirtualComponent(
           TARAJI_COMPONENT,
           TARAJI_VIRTUAL_FS
@@ -505,11 +546,15 @@ describe('MetadataResolver', () => {
           },
         ]);
 
-        expect(access.getComponentsFromPath(TARAJI_DIR)).to.deep.equal([component]);
+        const components = resolveSource(TARAJI_DIR, {
+          registry: mockRegistry,
+          tree: new VirtualTreeContainer(TARAJI_VIRTUAL_FS),
+        });
+
+        expect(components.toArray()).to.deep.equal([component]);
       });
 
-      it('Should stop resolution if parent component is resolved', () => {
-        const access = testUtil.createMetadataResolver(REGINA_VIRTUAL_FS);
+      it('should stop resolution if parent component is resolved', () => {
         testUtil.stubAdapters([
           {
             type: mockRegistryData.types.reginaking,
@@ -519,16 +564,27 @@ describe('MetadataResolver', () => {
             ],
           },
         ]);
-        expect(access.getComponentsFromPath(REGINA_PATH)).to.deep.equal([REGINA_COMPONENT]);
+
+        const components = resolveSource(REGINA_PATH, {
+          registry: mockRegistry,
+          tree: new VirtualTreeContainer(REGINA_VIRTUAL_FS),
+        });
+
+        expect(components.toArray()).to.deep.equal([REGINA_COMPONENT]);
       });
 
       it('should return expected child SourceComponent when given a subdirectory of a folderPerType component', () => {
         const tree = new VirtualTreeContainer(REGINA_VIRTUAL_FS);
-        const access = testUtil.createMetadataResolver(REGINA_VIRTUAL_FS);
         const expectedComponent = new SourceComponent(REGINA_COMPONENT, tree);
         const children = expectedComponent.getChildren();
         const expectedChild = children.find((c) => c.xml === REGINA_CHILD_XML_PATH_2);
-        expect(access.getComponentsFromPath(REGINA_CHILD_DIR_PATH)).to.deep.equal([expectedChild]);
+
+        const components = resolveSource(REGINA_CHILD_DIR_PATH, {
+          registry: mockRegistry,
+          tree: new VirtualTreeContainer(REGINA_VIRTUAL_FS),
+        });
+
+        expect(components.toArray()).to.deep.equal([expectedChild]);
       });
 
       /**
@@ -538,7 +594,7 @@ describe('MetadataResolver', () => {
        * Pretend that this bundle's root xml suffix is the same as KeanuReeves - still should be
        * identified as SimonPegg type
        */
-      it('Should handle suffix collision for mixed content types', () => {
+      it('should handle suffix collision for mixed content types', () => {
         const tree = new VirtualTreeContainer([
           {
             dirPath: simon.SIMON_DIR,
@@ -549,8 +605,9 @@ describe('MetadataResolver', () => {
             children: [keanu.KEANU_XML_NAMES[0], basename(simon.SIMON_SOURCE_PATHS[0])],
           },
         ]);
-        const access = new MetadataResolver(mockRegistry, tree);
-        expect(access.getComponentsFromPath(simon.SIMON_DIR)).to.deep.equal([
+        const components = resolveSource(simon.SIMON_DIR, { registry: mockRegistry, tree });
+
+        expect(components.toArray()).to.deep.equal([
           new SourceComponent(
             {
               name: 'a',
@@ -563,15 +620,9 @@ describe('MetadataResolver', () => {
         ]);
       });
 
-      it('Should not return components if the directory is forceignored', () => {
+      it('should not return components if the directory is forceignored', () => {
         const dirPath = kathy.KATHY_FOLDER;
         testUtil.stubForceIgnore({ seed: dirPath, deny: [dirPath] });
-        const access = testUtil.createMetadataResolver([
-          {
-            dirPath,
-            children: [kathy.KATHY_XML_NAMES[0], kathy.KATHY_XML_NAMES[1]],
-          },
-        ]);
         testUtil.stubAdapters([
           {
             type: mockRegistryData.types.kathybates,
@@ -587,7 +638,18 @@ describe('MetadataResolver', () => {
             ],
           },
         ]);
-        expect(access.getComponentsFromPath(dirPath).length).to.equal(0);
+
+        const components = resolveSource(dirPath, {
+          registry: mockRegistry,
+          tree: new VirtualTreeContainer([
+            {
+              dirPath,
+              children: [kathy.KATHY_XML_NAMES[0], kathy.KATHY_XML_NAMES[1]],
+            },
+          ]),
+        });
+
+        expect(components.size).to.equal(0);
       });
     });
   });

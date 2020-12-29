@@ -5,7 +5,7 @@
  * For full license text, see LICENSE.txt file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
 import { basename, dirname, join, sep } from 'path';
-import { TreeContainer } from './types';
+import { ResolveSourceOptions, TreeContainer } from './types';
 import { TypeInferenceError } from '../errors';
 import { extName, parentName } from '../utils/path';
 import { parseMetadataXml } from '../utils/registry';
@@ -449,13 +449,11 @@ export class MetadataResolver {
   }
 }
 
-interface ResolveSourceOptions {
-  tree?: TreeContainer;
-  registry?: RegistryAccess;
-}
-
-export function resolveSource(fsPath: string, options: ResolveSourceOptions = {}): ComponentSet {
+export function resolveSource(
+  fsPath: string,
+  options: ResolveSourceOptions = {}
+): ComponentSet<SourceComponent> {
   const { registry = new RegistryAccess(), tree = new NodeFSTreeContainer() } = options;
   const resolver = new MetadataResolver(registry, tree);
-  return new ComponentSet(resolver.resolve(fsPath), registry);
+  return new ComponentSet<SourceComponent>(resolver.resolve(fsPath), registry);
 }
