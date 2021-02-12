@@ -8,6 +8,7 @@ import { AuthInfo, Connection } from '@salesforce/core';
 import { EventEmitter } from 'events';
 import { ComponentSet } from '../collections';
 import { MetadataTransferError } from '../errors';
+import { DeployResult } from './metadataApiDeploy';
 import { MetadataRequestResult, RequestStatus, SourceApiResult } from './types';
 
 export interface MetadataTransferOptions {
@@ -15,7 +16,10 @@ export interface MetadataTransferOptions {
   components: ComponentSet;
 }
 
-export abstract class MetadataTransfer<U extends MetadataRequestResult, R extends SourceApiResult> {
+export abstract class MetadataTransfer<
+  U extends MetadataRequestResult,
+  R extends SourceApiResult | DeployResult
+> {
   protected components: ComponentSet;
   private signalCancel = false;
   private event = new EventEmitter();

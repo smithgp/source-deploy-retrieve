@@ -56,6 +56,14 @@ export class RegistryAccess {
     );
   }
 
+  public getParentType(type: string | MetadataType): MetadataType | undefined {
+    const typeId = typeof type === 'string' ? type.toLowerCase() : type.id;
+    const parentId = this.registry.childTypes[typeId];
+    if (parentId) {
+      return this.getTypeByName(parentId);
+    }
+  }
+
   get apiVersion(): string {
     return this.registry.apiVersion;
   }

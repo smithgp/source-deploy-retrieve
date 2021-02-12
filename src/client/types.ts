@@ -39,8 +39,8 @@ export type ComponentDiagnostic = {
   lineNumber?: number;
   columnNumber?: number;
   filePath?: SourcePath;
-  message: string;
-  type: 'Warning' | 'Error';
+  error: string;
+  problemType: 'Warning' | 'Error';
 };
 
 export interface SourceApiResult {
@@ -94,7 +94,7 @@ export interface SourceRetrieveResult extends SourceApiResult {
 /**
  * Raw response returned from a checkDeployStatus call to the Metadata API
  */
-export interface DeployResult extends MetadataRequestResult {
+export interface MetadataApiDeployStatus extends MetadataRequestResult {
   canceledBy?: string;
   canceledByName?: string;
   checkOnly: boolean;
