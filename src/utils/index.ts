@@ -8,3 +8,7 @@
 export { createFiles } from './fileSystemHandler';
 export { generateMetaXML, generateMetaXMLPath, trimMetaXmlSuffix } from './metadata';
 export { extName, baseName } from './path';
+
+export function normalizeToArray<T>(entryOrArray: T | T[]): T[] {
+  return Array.isArray(entryOrArray) ? entryOrArray : [entryOrArray];
+}

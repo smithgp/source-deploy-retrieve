@@ -142,7 +142,9 @@ export class StandardWriter extends ComponentWriter {
           const fullDest = isAbsolute(info.output)
             ? info.output
             : join(this.rootDestination, info.output);
-          if (!resolvePath) {
+          // if there are children, resolve each file. o/w just pick one of the files to resolve
+          if (!resolvePath || chunk.component.type.children) {
+            this.converted.push(this.resolver.getComponentsFromPath(fullDest)[0]);
             resolvePath = fullDest;
           }
           ensureFileExists(fullDest);
@@ -152,7 +154,6 @@ export class StandardWriter extends ComponentWriter {
         // every component has been written to the destination. This await ensures the microtask
         // queue is empty when that call exits and overall less memory is consumed.
         await Promise.all(writeTasks);
-        this.converted.push(...this.resolver.getComponentsFromPath(resolvePath));
       } catch (e) {
         err = e;
       }

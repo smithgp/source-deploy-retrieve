@@ -23,7 +23,7 @@ import {
   FileProperties,
   MetadataApiDeployOptions,
   RequestStatus,
-  RetrieveResult,
+  MetadataApiRetrieveStatus,
 } from '../../../src/client/types';
 import { mockRegistry } from '../registry';
 import { KEANU_COMPONENT } from '../registry/keanuConstants';
@@ -143,7 +143,7 @@ export async function stubMetadataRetrieve(
     })
     .resolves(MOCK_ASYNC_RESULT);
 
-  const defaultStatus: Partial<RetrieveResult> = {
+  const defaultStatus: Partial<MetadataApiRetrieveStatus> = {
     id: MOCK_ASYNC_RESULT.id,
     status: RequestStatus.Pending,
     success: false,

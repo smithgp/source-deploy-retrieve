@@ -11,34 +11,11 @@ import {
   DeployMessage,
   MetadataApiDeployOptions as ApiOptions,
   ComponentStatus,
+  FileResponse,
 } from './types';
 import { MetadataTransfer, MetadataTransferOptions } from './metadataTransfer';
 import { ComponentSet } from '../collections';
 import { SourceComponent } from '../metadata-registry';
-
-export interface MetadataApiDeployOptions extends MetadataTransferOptions {
-  apiOptions?: ApiOptions;
-}
-
-interface FileResponseBase {
-  fullName: string;
-  type: string;
-  filePath: string;
-}
-
-interface FileResponseSuccess extends FileResponseBase {
-  state: Exclude<ComponentStatus, ComponentStatus.Failed>;
-}
-
-interface FileResponseFailure extends FileResponseBase {
-  state: ComponentStatus.Failed;
-  lineNumber?: number;
-  columnNumber?: number;
-  error: string;
-  problemType: 'Warning' | 'Error';
-}
-
-type FileResponse = FileResponseSuccess | FileResponseFailure;
 
 export class DeployResult {
   public readonly response: MetadataApiDeployStatus;
@@ -158,6 +135,10 @@ export class DeployResult {
     }
     return [];
   }
+}
+
+export interface MetadataApiDeployOptions extends MetadataTransferOptions {
+  apiOptions?: ApiOptions;
 }
 
 export class MetadataApiDeploy extends MetadataTransfer<MetadataApiDeployStatus, DeployResult> {
