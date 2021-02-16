@@ -279,10 +279,6 @@ export class ComponentSet implements Iterable<MetadataComponent> {
     let iter;
 
     if (forMember) {
-      const parentType = this.registry.getParentType(forMember.type);
-      if (parentType) {
-        yield* this.findChildrenThroughParent(parentType, forMember.fullName);
-      }
       // filter optimization since members are keyed
       const memberCollection = this.components.get(this.simpleKey(forMember));
       iter = memberCollection?.size > 0 ? memberCollection.values() : [];
@@ -334,30 +330,6 @@ export class ComponentSet implements Iterable<MetadataComponent> {
       size += collection.size === 0 ? 1 : collection.size;
     }
     return size;
-  }
-
-  /**
-   * Searches for a source-backed child components in the set through its parent.
-   *
-   * @param parentType
-   * @param childFullName
-   */
-  private *findChildrenThroughParent(
-    parentType: MetadataType,
-    childFullName: string
-  ): IterableIterator<SourceComponent> {
-    const parentKey = this.simpleKey({ fullName: childFullName.split('.')[0], type: parentType });
-    const parentCollection = this.components.get(parentKey);
-    if (parentCollection) {
-      for (const parentComponent of this.components.get(parentKey).values()) {
-        const childComponent = parentComponent
-          .getChildren()
-          .find((child) => child.fullName === childFullName);
-        if (childComponent) {
-          yield childComponent;
-        }
-      }
-    }
   }
 
   private sourceKey(component: SourceComponent): string {

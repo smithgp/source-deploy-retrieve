@@ -20,6 +20,7 @@ import { SourceComponent } from '../metadata-registry';
 export class DeployResult {
   public readonly response: MetadataApiDeployStatus;
   public readonly components: ComponentSet;
+  private readonly diagnosticUtil = new DiagnosticUtil('metadata');
 
   constructor(response: MetadataApiDeployStatus, components: ComponentSet) {
     this.response = response;
@@ -28,55 +29,62 @@ export class DeployResult {
 
   public getFileResponses(): FileResponse[] {
     const fileResponses: FileResponse[] = [];
-    const diagnosticUtil = new DiagnosticUtil('metadata');
 
-    for (const message of this.getDeployMessages(this.response)) {
-      const { fullName, componentType } = message;
-      const component: SourceComponent | undefined = this.components
-        .getSourceComponents({ fullName, type: componentType })
-        .next().value;
+    const messages = this.getDeployMessages(this.response);
 
-      if (component) {
-        let response: Partial<FileResponse> = {
-          fullName: component.fullName,
-          type: component.type.name,
-          state: this.getState(message),
-        };
-
-        if (response.state === ComponentStatus.Failed) {
-          const diagnostic = diagnosticUtil.parseDeployDiagnostic(component, message);
-          if (component.xml && !component.content) {
-            response = Object.assign(diagnostic, {
-              fullName: component.fullName,
-              type: component.type.name,
-              state: response.state,
-              filePath: component.xml,
-            });
-          } else {
-            response = Object.assign(response, diagnostic);
-          }
-          fileResponses.push(response as FileResponse);
-        } else {
-          // components with children are already taken care of through the messages,
-          // so don't walk their content directories.
-          if (component.content && !component.type.children) {
-            for (const filePath of component.walkContent()) {
-              const contentResponse = Object.assign({}, response, { filePath }) as FileResponse;
-              fileResponses.push(contentResponse);
-            }
-          }
-
-          if (component.xml) {
-            const xmlResponse = Object.assign({}, response, {
-              filePath: component.xml,
-            }) as FileResponse;
-            fileResponses.push(xmlResponse);
+    for (const deployedComponent of this.components.getSourceComponents()) {
+      const { fullName, type } = deployedComponent;
+      if (type.children) {
+        for (const child of deployedComponent.getChildren()) {
+          const childMessages = messages.get(`${child.fullName}#${child.type.name}`);
+          if (childMessages) {
+            fileResponses.push(...this.createResponses(child, childMessages));
           }
         }
+      }
+      const componentMessages = messages.get(`${fullName}#${type.name}`);
+      if (componentMessages) {
+        fileResponses.push(...this.createResponses(deployedComponent, componentMessages));
       }
     }
 
     return fileResponses;
+  }
+
+  private createResponses(component: SourceComponent, messages: DeployMessage[]): FileResponse[] {
+    const { fullName, type, xml, content } = component;
+    const responses: FileResponse[] = [];
+
+    for (const message of messages) {
+      const baseResponse: Partial<FileResponse> = {
+        fullName,
+        type: type.name,
+        state: this.getState(message),
+      };
+
+      if (baseResponse.state === ComponentStatus.Failed) {
+        const diagnostic = this.diagnosticUtil.parseDeployDiagnostic(component, message);
+        const xmlAsFilePath = xml && !content ? { filePath: xml } : {};
+        const response = Object.assign(baseResponse, diagnostic, xmlAsFilePath) as FileResponse;
+        responses.push(response);
+      } else {
+        // components with children are already taken care of through the messages,
+        // so don't walk their content directories.
+        if (content && !type.children) {
+          for (const filePath of component.walkContent()) {
+            const response = Object.assign({}, baseResponse, { filePath }) as FileResponse;
+            responses.push(response);
+          }
+        }
+
+        if (xml) {
+          const response = Object.assign({}, baseResponse, { filePath: xml }) as FileResponse;
+          responses.push(response);
+        }
+      }
+    }
+
+    return responses;
   }
 
   private getState(message: DeployMessage): ComponentStatus {
@@ -92,8 +100,9 @@ export class DeployResult {
     return ComponentStatus.Unchanged;
   }
 
-  private getDeployMessages(result: MetadataApiDeployStatus): DeployMessage[] {
+  private getDeployMessages(result: MetadataApiDeployStatus): Map<string, DeployMessage[]> {
     const messages: DeployMessage[] = [];
+    const messageMap = new Map<string, DeployMessage[]>();
 
     const failedComponents = new ComponentSet();
     const failureMessages = this.normalizeToArray(result.details.componentFailures);
@@ -103,20 +112,29 @@ export class DeployResult {
       const sanitized = this.sanitizeDeployMessage(failure);
       const { fullName, componentType: type } = sanitized;
       failedComponents.add({ fullName, type });
-      messages.push(failure);
+      messages.push(sanitized);
+      const key = `${fullName}#${type}`;
+      if (!messageMap.has(key)) {
+        messageMap.set(key, []);
+      }
+      messageMap.get(key).push(sanitized);
     }
 
     for (const success of successMessages) {
       const sanitized = this.sanitizeDeployMessage(success);
       const { fullName, componentType: type } = sanitized;
+      const key = `${fullName}#${type}`;
       // lwc will return failures and successes for the same component, which is wrong.
       // this will ensure successes aren't reported if there is a failure for a component
       if (!failedComponents.has({ fullName, type })) {
-        messages.push(sanitized);
+        if (!messageMap.has(key)) {
+          messageMap.set(key, []);
+        }
+        messageMap.get(key).push(sanitized);
       }
     }
 
-    return messages;
+    return messageMap;
   }
 
   /**
@@ -178,51 +196,7 @@ export class MetadataApiDeploy extends MetadataTransfer<MetadataApiDeployStatus,
   }
 
   protected async post(result: MetadataApiDeployStatus): Promise<DeployResult> {
-    const r = new DeployResult(result, this.components);
-    return r;
-    // const diagnosticUtil = new DiagnosticUtil('metadata');
-    // const componentDeploymentMap = new Map<string, ComponentDeployment>();
-    // const deployResult: SourceDeployResult = {
-    //   id: result.id,
-    //   status: result.status,
-    //   success: result.success,
-    // };
-
-    // for (const component of this.components.getSourceComponents()) {
-    //   componentDeploymentMap.set(`${component.type.name}:${component.fullName}`, {
-    //     status: ComponentStatus.Unchanged,
-    //     component,
-    //     diagnostics: [],
-    //   });
-    // }
-
-    // for (let message of this.getDeployMessages(result)) {
-    //   message = this.sanitizeDeployMessage(message);
-    //   const componentKey = `${message.componentType}:${message.fullName}`;
-    //   const componentDeployment = componentDeploymentMap.get(componentKey);
-
-    //   if (componentDeployment) {
-    //     if (message.created === 'true') {
-    //       componentDeployment.status = ComponentStatus.Created;
-    //     } else if (message.changed === 'true') {
-    //       componentDeployment.status = ComponentStatus.Changed;
-    //     } else if (message.deleted === 'true') {
-    //       componentDeployment.status = ComponentStatus.Deleted;
-    //     } else if (message.success === 'false') {
-    //       componentDeployment.status = ComponentStatus.Failed;
-    //     } else {
-    //       componentDeployment.status = ComponentStatus.Unchanged;
-    //     }
-
-    //     if (message.problem) {
-    //       diagnosticUtil.setDeployDiagnostic(componentDeployment, message);
-    //     }
-    //   }
-    // }
-
-    // deployResult.components = Array.from(componentDeploymentMap.values());
-
-    // return deployResult;
+    return new DeployResult(result, this.components);
   }
 
   protected async doCancel(): Promise<boolean> {
@@ -233,35 +207,5 @@ export class MetadataApiDeploy extends MetadataTransfer<MetadataApiDeployStatus,
       done = connection.metadata._invoke('cancelDeploy', { id: this.deployId }).done;
     }
     return done;
-  }
-
-  private getDeployMessages(result: MetadataApiDeployStatus): DeployMessage[] {
-    const messages: DeployMessage[] = [];
-    const { componentSuccesses, componentFailures } = result.details;
-    if (componentSuccesses) {
-      if (Array.isArray(componentSuccesses)) {
-        messages.push(...componentSuccesses);
-      } else {
-        messages.push(componentSuccesses);
-      }
-    }
-    if (componentFailures) {
-      if (Array.isArray(componentFailures)) {
-        messages.push(...componentFailures);
-      } else {
-        messages.push(componentFailures);
-      }
-    }
-    return messages;
-  }
-
-  /**
-   * Fix any issues with the deploy message returned by the api.
-   * TODO: remove as fixes are made in the api.
-   */
-  private sanitizeDeployMessage(message: DeployMessage): DeployMessage {
-    // lwc doesn't properly use the fullname property in the api.
-    message.fullName = message.fullName.replace(/markup:\/\/c:/, '');
-    return message;
   }
 }
