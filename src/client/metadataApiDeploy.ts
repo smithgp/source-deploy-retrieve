@@ -12,6 +12,7 @@ import {
   MetadataApiDeployOptions as ApiOptions,
   ComponentStatus,
   FileResponse,
+  MetadataTransferResult,
 } from './types';
 import { MetadataTransfer, MetadataTransferOptions } from './metadataTransfer';
 import { ComponentSet } from '../collections';
@@ -20,7 +21,7 @@ import { normalizeToArray } from '../utils';
 import { ComponentLike } from '../common';
 import { basename, dirname, extname, join } from 'path';
 
-export class DeployResult {
+export class DeployResult implements MetadataTransferResult {
   public readonly response: MetadataApiDeployStatus;
   public readonly components: ComponentSet;
   private readonly diagnosticUtil = new DiagnosticUtil('metadata');

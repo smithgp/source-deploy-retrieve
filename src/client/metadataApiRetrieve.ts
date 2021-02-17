@@ -11,14 +11,14 @@ import {
   RequestStatus,
   RetrieveOptions,
   MetadataApiRetrieveStatus,
-  TransferResult,
+  MetadataTransferResult,
   FileResponse,
   ComponentStatus,
 } from './types';
 import { MetadataTransfer, MetadataTransferOptions } from './metadataTransfer';
 import { normalizeToArray } from '../utils';
 
-export class RetrieveResult implements TransferResult {
+export class RetrieveResult implements MetadataTransferResult {
   public readonly response: MetadataApiRetrieveStatus;
   public readonly components: ComponentSet;
 
