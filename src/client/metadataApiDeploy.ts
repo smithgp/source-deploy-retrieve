@@ -15,7 +15,10 @@ import {
 } from './types';
 import { MetadataTransfer, MetadataTransferOptions } from './metadataTransfer';
 import { ComponentSet } from '../collections';
-import { SourceComponent } from '../metadata-registry';
+import { registryData, SourceComponent } from '../metadata-registry';
+import { normalizeToArray } from '../utils';
+import { ComponentLike } from '../common';
+import { basename, dirname, extname, join } from 'path';
 
 export class DeployResult {
   public readonly response: MetadataApiDeployStatus;
@@ -28,21 +31,19 @@ export class DeployResult {
   }
 
   public getFileResponses(): FileResponse[] {
+    const messages = this.getDeployMessages(this.response);
     const fileResponses: FileResponse[] = [];
 
-    const messages = this.getDeployMessages(this.response);
-
     for (const deployedComponent of this.components.getSourceComponents()) {
-      const { fullName, type } = deployedComponent;
-      if (type.children) {
+      if (deployedComponent.type.children) {
         for (const child of deployedComponent.getChildren()) {
-          const childMessages = messages.get(`${child.fullName}#${child.type.name}`);
+          const childMessages = messages.get(this.key(child));
           if (childMessages) {
             fileResponses.push(...this.createResponses(child, childMessages));
           }
         }
       }
-      const componentMessages = messages.get(`${fullName}#${type.name}`);
+      const componentMessages = messages.get(this.key(deployedComponent));
       if (componentMessages) {
         fileResponses.push(...this.createResponses(deployedComponent, componentMessages));
       }
@@ -64,8 +65,8 @@ export class DeployResult {
 
       if (baseResponse.state === ComponentStatus.Failed) {
         const diagnostic = this.diagnosticUtil.parseDeployDiagnostic(component, message);
-        const xmlAsFilePath = xml && !content ? { filePath: xml } : {};
-        const response = Object.assign(baseResponse, diagnostic, xmlAsFilePath) as FileResponse;
+        // const xmlAsFilePath = xml && !content ? { filePath: xml } : {};
+        const response = Object.assign(baseResponse, diagnostic) as FileResponse;
         responses.push(response);
       } else {
         // components with children are already taken care of through the messages,
@@ -100,33 +101,40 @@ export class DeployResult {
     return ComponentStatus.Unchanged;
   }
 
+  /**
+   * Groups messages from the deploy result by component fullName and type
+   */
   private getDeployMessages(result: MetadataApiDeployStatus): Map<string, DeployMessage[]> {
-    const messages: DeployMessage[] = [];
     const messageMap = new Map<string, DeployMessage[]>();
 
     const failedComponents = new ComponentSet();
-    const failureMessages = this.normalizeToArray(result.details.componentFailures);
-    const successMessages = this.normalizeToArray(result.details.componentSuccesses);
+    const failureMessages = normalizeToArray(result.details.componentFailures);
+    const successMessages = normalizeToArray(result.details.componentSuccesses);
 
     for (const failure of failureMessages) {
       const sanitized = this.sanitizeDeployMessage(failure);
-      const { fullName, componentType: type } = sanitized;
-      failedComponents.add({ fullName, type });
-      messages.push(sanitized);
-      const key = `${fullName}#${type}`;
+      const componentLike: ComponentLike = {
+        fullName: sanitized.fullName,
+        type: sanitized.componentType,
+      };
+      const key = this.key(componentLike);
       if (!messageMap.has(key)) {
         messageMap.set(key, []);
       }
       messageMap.get(key).push(sanitized);
+      failedComponents.add(componentLike);
     }
 
     for (const success of successMessages) {
       const sanitized = this.sanitizeDeployMessage(success);
-      const { fullName, componentType: type } = sanitized;
-      const key = `${fullName}#${type}`;
+      const componentLike: ComponentLike = {
+        fullName: sanitized.fullName,
+        type: sanitized.componentType,
+      };
+      const key = this.key(componentLike);
       // lwc will return failures and successes for the same component, which is wrong.
       // this will ensure successes aren't reported if there is a failure for a component
-      if (!failedComponents.has({ fullName, type })) {
+      if (!failedComponents.has(componentLike)) {
         if (!messageMap.has(key)) {
           messageMap.set(key, []);
         }
@@ -139,19 +147,29 @@ export class DeployResult {
 
   /**
    * Fix any issues with the deploy message returned by the api.
-   * TODO: remove as fixes are made in the api.
+   * TODO: remove cases if fixes are made in the api.
    */
   private sanitizeDeployMessage(message: DeployMessage): DeployMessage {
-    // lwc doesn't properly use the fullname property in the api.
-    message.fullName = message.fullName.replace(/markup:\/\/c:/, '');
+    switch (message.componentType) {
+      case registryData.types.lightningcomponentbundle.name:
+        // remove the markup scheme from fullName
+        message.fullName = message.fullName.replace(/markup:\/\/c:/, '');
+        break;
+      case registryData.types.document.name:
+        // strip document extension from fullName
+        message.fullName = join(
+          dirname(message.fullName),
+          basename(message.fullName, extname(message.fullName))
+        );
+        break;
+      default:
+    }
     return message;
   }
 
-  private normalizeToArray(messages: DeployMessage | DeployMessage[] | undefined): DeployMessage[] {
-    if (messages) {
-      return Array.isArray(messages) ? messages : [messages];
-    }
-    return [];
+  private key(component: ComponentLike): string {
+    const type = typeof component.type === 'string' ? component.type : component.type.name;
+    return `${type}#${component.fullName}`;
   }
 }
 
