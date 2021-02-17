@@ -89,7 +89,7 @@ export class DiagnosticUtil {
       if (matches && matches[2] && matches[3] && matches[4]) {
         diagnostic.lineNumber = Number(matches[2]);
         diagnostic.columnNumber = Number(matches[3]);
-        diagnostic.error = matches[4];
+        diagnostic.error = `${matches[4]} (${matches[2]}:${matches[3]})`;
       } else {
         diagnostic.error = problem;
       }
@@ -138,7 +138,11 @@ export class DiagnosticUtil {
       if (matches && matches[2] && matches[3] && matches[4]) {
         diagnostic.lineNumber = Number(matches[2]);
         diagnostic.columnNumber = Number(matches[3]);
-        diagnostic.error = matches[4];
+        diagnostic.error = this.appendErrorWithLocation(
+          matches[4],
+          diagnostic.lineNumber,
+          diagnostic.columnNumber
+        );
       } else {
         diagnostic.error = problem;
       }
@@ -256,9 +260,6 @@ export class DiagnosticUtil {
         diagnostic.error = this.appendErrorWithLocation(diagnostic.error, lineNumber, columnNumber);
       }
     }
-
-    diagnostic.error = problem;
-    // componentDeployment.diagnostics.push(diagnostic);
 
     return diagnostic;
   }
