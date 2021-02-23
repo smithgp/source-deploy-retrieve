@@ -141,7 +141,7 @@ describe('ManifestGenerator', () => {
 
   it('should successfully create a manifest with a sourcepath', () => {
     const resolver = new MetadataResolver();
-    sandboxStub.stub(resolver, 'getComponentsFromPath').returns(mdComponents);
+    sandboxStub.stub(resolver, 'resolveSource').returns(mdComponents);
     const manifestGenerator = new ManifestGenerator(resolver);
     const writeFileStub = sandboxStub.stub(fs, 'writeFileSync');
     manifestGenerator.createManifestFromPath(
@@ -156,7 +156,7 @@ describe('ManifestGenerator', () => {
 
   it('should throw error when handling unexpected errors on creating a manifest with a sourcepath', () => {
     const resolver = new MetadataResolver();
-    sandboxStub.stub(resolver, 'getComponentsFromPath').returns(mdComponents);
+    sandboxStub.stub(resolver, 'resolveSource').returns(mdComponents);
     const manifestGenerator = new ManifestGenerator(resolver);
     const writeFileStub = sandboxStub.stub(fs, 'writeFileSync');
     writeFileStub.onCall(0).throwsException('Unexpected error when creating file');

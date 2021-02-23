@@ -221,7 +221,7 @@ export class ComponentSet extends LazyCollection<MetadataComponent> {
     }
 
     const resolver = new MetadataResolver(this.registry, options?.tree);
-    const resolved = resolver.getComponentsFromPath(fsPath, filterSet);
+    const resolved = resolver.resolveSource(fsPath, filterSet);
     const sourceComponents = new ComponentSet();
 
     for (const component of resolved) {

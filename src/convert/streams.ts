@@ -156,7 +156,7 @@ export class StandardWriter extends ComponentWriter {
         await Promise.all(writeTasks);
 
         for (const fsPath of toResolve) {
-          this.converted.push(...this.resolver.getComponentsFromPath(fsPath));
+          this.converted.push(...this.resolver.resolveSource(fsPath));
         }
       } catch (e) {
         err = e;

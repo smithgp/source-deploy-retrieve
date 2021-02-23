@@ -50,7 +50,7 @@ describe('Tooling API tests', () => {
       xml: 'myTestClass.cls-meta.xml',
       content: 'file/path/myTestClass.cls',
     });
-    sandboxStub.stub(MetadataResolver.prototype, 'getComponentsFromPath').returns([component]);
+    sandboxStub.stub(MetadataResolver.prototype, 'resolveSource').returns([component]);
     sandboxStub.stub(ContainerDeploy.prototype, 'buildMetadataField').returns(testMetadataField);
     const mockContainerDeploy = sandboxStub.stub(ContainerDeploy.prototype, 'deploy').resolves({
       id: '123',
@@ -71,7 +71,7 @@ describe('Tooling API tests', () => {
   });
 
   it('should exit deploy for unsupported types', async () => {
-    sandboxStub.stub(MetadataResolver.prototype, 'getComponentsFromPath').returns([
+    sandboxStub.stub(MetadataResolver.prototype, 'resolveSource').returns([
       new SourceComponent({
         type: registryData.types.flexipage,
         name: '',

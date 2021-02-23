@@ -37,12 +37,12 @@ export class MetadataResolver {
   }
 
   /**
-   * Get the metadata component(s) from a file path.
+   * Resolve metadata source paths into component objects.
    *
    * @param fsPath File path to metadata or directory
    * @param filter Set to filter which components are resolved
    */
-  public getComponentsFromPath(fsPath: string, filter?: ComponentSet): SourceComponent[] {
+  public resolveSource(fsPath: string, filter?: ComponentSet): SourceComponent[] {
     if (!this.tree.exists(fsPath)) {
       throw new TypeInferenceError('error_path_not_found', fsPath);
     }
@@ -50,17 +50,14 @@ export class MetadataResolver {
     this.forceIgnore = ForceIgnore.findAndCreate(fsPath);
 
     if (this.tree.isDirectory(fsPath) && !this.resolveDirectoryAsComponent(fsPath)) {
-      return this.getComponentsFromPathRecursive(fsPath, filter);
+      return this.resolveSourceRecursive(fsPath, filter);
     }
 
     const component = this.resolveComponent(fsPath, true);
     return component ? [component] : [];
   }
 
-  private getComponentsFromPathRecursive(
-    dir: SourcePath,
-    filter?: ComponentSet
-  ): SourceComponent[] {
+  private resolveSourceRecursive(dir: SourcePath, filter?: ComponentSet): SourceComponent[] {
     const dirQueue: SourcePath[] = [];
     const components: SourceComponent[] = [];
     const ignore = new Set();
@@ -110,7 +107,7 @@ export class MetadataResolver {
     }
 
     for (const dir of dirQueue) {
-      components.push(...this.getComponentsFromPathRecursive(dir, filter));
+      components.push(...this.resolveSourceRecursive(dir, filter));
     }
 
     return components;
@@ -245,3 +242,19 @@ export class MetadataResolver {
     );
   }
 }
+
+// interface ResolveSourceOptions {
+//   paths: string[];
+//   tree?: TreeContainer;
+//   registry?: RegistryAccess;
+// }
+
+// export function resolveSource(path: string): ComponentSet;
+// export function resolveSource(paths: string[]): ComponentSet;
+// export function resolveSource(options: ResolveSourceOptions): ComponentSet;
+// export function resolveSource(input: string | string[] | ResolveSourceOptions): ComponentSet {
+//   switch (typeof input) {
+//     case 'string':
+
+//   }
+// }

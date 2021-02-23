@@ -25,7 +25,7 @@ export class ManifestGenerator {
 
   public createManifestFromPath(sourcePath: string, outputPath: string): void {
     try {
-      const mdComponents: SourceComponent[] = this.resolver.getComponentsFromPath(sourcePath);
+      const mdComponents: SourceComponent[] = this.resolver.resolveSource(sourcePath);
       writeFileSync(outputPath, this.createManifest(mdComponents));
     } catch (err) {
       throw new RegistryError('error_on_manifest_creation', [sourcePath, err]);

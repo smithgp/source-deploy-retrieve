@@ -265,7 +265,7 @@ describe('Streams', () => {
 
     describe('StandardWriter', () => {
       const resolver = new MetadataResolver(mockRegistry, component.tree);
-      const resolverSpy = env.spy(resolver, 'getComponentsFromPath');
+      const resolverSpy = env.spy(resolver, 'resolveSource');
 
       let writer: streams.StandardWriter;
 
@@ -350,7 +350,7 @@ describe('Streams', () => {
         await writer._write(chunk, '', (err: Error) => {
           expect(err).to.be.undefined;
           const destination = join(rootDestination, component.type.directoryName);
-          const expected = resolver.getComponentsFromPath(destination);
+          const expected = resolver.resolveSource(destination);
           expect(writer.converted).to.deep.equal(expected);
         });
       });

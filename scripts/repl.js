@@ -20,7 +20,7 @@ const context = {
   ComponentSet: ComponentSet,
   resolve: (path) => {
     const resolver = new MetadataResolver();
-    return resolver.getComponentsFromPath(path);
+    return resolver.resolveSource(path);
   },
   convert: async (components, targetFormat, outputConfig) => {
     converter = new MetadataConverter();

@@ -84,7 +84,7 @@ describe('Tooling Retrieve', () => {
   });
 
   it('should generate correct query to retrieve an ApexClass', async () => {
-    sandboxStub.stub(resolver, 'getComponentsFromPath').returns(mdComponents);
+    sandboxStub.stub(resolver, 'resolveSource').returns(mdComponents);
     const toolingQueryStub = sandboxStub.stub(mockConnection.tooling, 'query');
     // @ts-ignore
     toolingQueryStub.returns(apexClassQueryResult);
@@ -115,7 +115,7 @@ describe('Tooling Retrieve', () => {
   });
 
   it('should generate correct query to retrieve an ApexClass using namespace', async () => {
-    sandboxStub.stub(resolver, 'getComponentsFromPath').returns(mdComponents);
+    sandboxStub.stub(resolver, 'resolveSource').returns(mdComponents);
     const toolingQueryStub = sandboxStub.stub(mockConnection.tooling, 'query');
     // @ts-ignore
     toolingQueryStub.returns(apexClassQueryResult);
@@ -152,7 +152,7 @@ describe('Tooling Retrieve', () => {
       xml: path.join('file', 'path', 'myTestClass.cls-meta.xml'),
       content: path.join('file', 'path', 'myTestClass.cls'),
     });
-    sandboxStub.stub(resolver, 'getComponentsFromPath').returns([component]);
+    sandboxStub.stub(resolver, 'resolveSource').returns([component]);
 
     sandboxStub
       .stub(mockConnection.tooling, 'query')
@@ -216,7 +216,7 @@ describe('Tooling Retrieve', () => {
   });
 
   it('should return empty result when metadata is not in org', async () => {
-    sandboxStub.stub(resolver, 'getComponentsFromPath').returns(mdComponents);
+    sandboxStub.stub(resolver, 'resolveSource').returns(mdComponents);
 
     sandboxStub
       .stub(mockConnection.tooling, 'query')

@@ -147,6 +147,6 @@ export class ToolingApi {
     path: SourcePath,
     options?: ToolingDeployOptions
   ): Promise<SourceDeployResult> {
-    return this.deploy(this.resolver.getComponentsFromPath(path), options);
+    return this.deploy(this.resolver.resolveSource(path), options);
   }
 }
