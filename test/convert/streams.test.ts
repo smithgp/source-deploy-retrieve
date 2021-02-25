@@ -350,7 +350,7 @@ describe('Streams', () => {
         await writer._write(chunk, '', (err: Error) => {
           expect(err).to.be.undefined;
           const destination = join(rootDestination, component.type.directoryName);
-          const expected = resolver.resolveSource(destination);
+          const expected = resolver.resolveSource(destination).toArray();
           expect(writer.converted).to.deep.equal(expected);
         });
       });

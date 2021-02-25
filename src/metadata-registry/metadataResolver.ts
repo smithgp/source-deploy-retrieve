@@ -42,28 +42,37 @@ export class MetadataResolver {
    * @param fsPath File path to metadata or directory
    * @param filter Set to filter which components are resolved
    */
-  public resolveSource(fsPath: string, filter?: ComponentSet): SourceComponent[] {
-    if (!this.tree.exists(fsPath)) {
-      throw new TypeInferenceError('error_path_not_found', fsPath);
-    }
+  public resolveSource(fsPath: string, filter?: ComponentSet): ComponentSet<SourceComponent> {
+    // eslint-disable-next-line
+    const resolver = this;
+    return new ComponentSet(
+      (function* (): Iterable<SourceComponent> {
+        if (!resolver.tree.exists(fsPath)) {
+          throw new TypeInferenceError('error_path_not_found', fsPath);
+        }
 
-    this.forceIgnore = ForceIgnore.findAndCreate(fsPath);
+        resolver.forceIgnore = ForceIgnore.findAndCreate(fsPath);
 
-    if (this.tree.isDirectory(fsPath) && !this.resolveDirectoryAsComponent(fsPath)) {
-      return this.resolveSourceRecursive(fsPath, filter);
-    }
+        if (resolver.tree.isDirectory(fsPath) && !resolver.resolveDirectoryAsComponent(fsPath)) {
+          yield* resolver.resolveSourceRecursive(fsPath, filter);
+          return;
+        }
 
-    const component = this.resolveComponent(fsPath, true);
-    return component ? [component] : [];
+        yield resolver.resolveComponent(fsPath, true);
+      })(),
+      this.registry
+    );
   }
 
-  private resolveSourceRecursive(dir: SourcePath, filter?: ComponentSet): SourceComponent[] {
+  private *resolveSourceRecursive(
+    dir: SourcePath,
+    filter?: ComponentSet
+  ): Generator<SourceComponent> {
     const dirQueue: SourcePath[] = [];
-    const components: SourceComponent[] = [];
     const ignore = new Set();
 
     if (this.forceIgnore.denies(dir)) {
-      return components;
+      return;
     }
 
     for (const file of this.tree.readDirectory(dir)) {
@@ -77,7 +86,7 @@ export class MetadataResolver {
         if (this.resolveDirectoryAsComponent(fsPath)) {
           const component = this.resolveComponent(fsPath, true);
           if (!filter || filter.has(component)) {
-            components.push(component);
+            yield component;
             ignore.add(component.xml);
           }
         } else {
@@ -87,12 +96,12 @@ export class MetadataResolver {
         const component = this.resolveComponent(fsPath, false);
         if (component) {
           if (!filter || filter.has(component)) {
-            components.push(component);
+            yield component;
             ignore.add(component.content);
           } else {
             for (const child of component.getChildren()) {
               if (filter.has(child)) {
-                components.push(child);
+                yield child;
               }
             }
           }
@@ -100,17 +109,15 @@ export class MetadataResolver {
           // for mixed content types and ensures we don't add duplicates of the component.
           const typeDir = basename(dirname(component.type.inFolder ? dirname(fsPath) : fsPath));
           if (component.type.strictDirectoryName && typeDir !== component.type.directoryName) {
-            return components;
+            return;
           }
         }
       }
     }
 
     for (const dir of dirQueue) {
-      components.push(...this.resolveSourceRecursive(dir, filter));
+      yield* this.resolveSourceRecursive(dir, filter);
     }
-
-    return components;
   }
 
   private resolveComponent(fsPath: SourcePath, isResolvingSource: boolean): SourceComponent {
@@ -242,19 +249,3 @@ export class MetadataResolver {
     );
   }
 }
-
-// interface ResolveSourceOptions {
-//   paths: string[];
-//   tree?: TreeContainer;
-//   registry?: RegistryAccess;
-// }
-
-// export function resolveSource(path: string): ComponentSet;
-// export function resolveSource(paths: string[]): ComponentSet;
-// export function resolveSource(options: ResolveSourceOptions): ComponentSet;
-// export function resolveSource(input: string | string[] | ResolveSourceOptions): ComponentSet {
-//   switch (typeof input) {
-//     case 'string':
-
-//   }
-// }

@@ -32,20 +32,21 @@ import { LazyCollection } from './lazyCollection';
 export type DeploySetOptions = Omit<MetadataApiDeployOptions, 'components'>;
 export type RetrieveSetOptions = Omit<MetadataApiRetrieveOptions, 'components'>;
 
-export class ComponentSet extends LazyCollection<MetadataComponent> {
+export class ComponentSet<T extends MetadataComponent = MetadataComponent> extends LazyCollection<
+  T
+> {
   public static readonly WILDCARD = '*';
   private static readonly KEY_DELIMITER = '#';
   public apiVersion: string;
   private registry: RegistryAccess;
   private components = new Map<string, Map<string, SourceComponent>>();
+  private flush: Iterator<ComponentLike>;
 
   public constructor(components: Iterable<ComponentLike> = [], registry = new RegistryAccess()) {
     super();
     this.registry = registry;
     this.apiVersion = this.registry.apiVersion;
-    for (const component of components) {
-      this.add(component);
-    }
+    this.flush = components[Symbol.iterator]();
   }
 
   /**
@@ -177,20 +178,20 @@ export class ComponentSet extends LazyCollection<MetadataComponent> {
    * Get an object representation of a package manifest based on the set components.
    */
   public getObject(): PackageManifestObject {
-    const typeMap = new Map<string, string[]>();
-    for (const key of this.components.keys()) {
-      const [typeId, fullName] = key.split(ComponentSet.KEY_DELIMITER);
-      let type = this.registry.getTypeByName(typeId);
+    this.flushNoYield();
 
-      if (type.folderContentType) {
-        type = this.registry.getTypeByName(type.folderContentType);
-      }
+    const typeMap = new Map<string, string[]>();
+
+    for (const component of this) {
+      const type = component.type.folderContentType
+        ? this.registry.getTypeByName(component.type.folderContentType)
+        : component.type;
 
       if (!typeMap.has(type.name)) {
         typeMap.set(type.name, []);
       }
 
-      typeMap.get(type.name).push(fullName);
+      typeMap.get(type.name).push(component.fullName);
     }
 
     const typeMembers: PackageTypeMembers[] = [];
@@ -217,7 +218,7 @@ export class ComponentSet extends LazyCollection<MetadataComponent> {
 
     if (options?.filter) {
       const { filter } = options;
-      filterSet = filter instanceof ComponentSet ? filter : new ComponentSet(filter);
+      filterSet = filter instanceof ComponentSet ? filter : new ComponentSet(filter, this.registry);
     }
 
     const resolver = new MetadataResolver(this.registry, options?.tree);
@@ -251,6 +252,8 @@ export class ComponentSet extends LazyCollection<MetadataComponent> {
   public getSourceComponents(member?: ComponentLike): LazyCollection<SourceComponent> {
     let iter: Iterable<MetadataComponent>;
 
+    this.flushNoYield();
+
     if (member) {
       // filter optimization
       const memberCollection = this.components.get(this.simpleKey(member));
@@ -264,17 +267,24 @@ export class ComponentSet extends LazyCollection<MetadataComponent> {
     >;
   }
 
-  public add(component: ComponentLike): void {
+  public add(component: ComponentLike): boolean {
+    let added = false;
     const key = this.simpleKey(component);
     if (!this.components.has(key)) {
       this.components.set(key, new Map<string, SourceComponent>());
+      added = true;
     }
     if (component instanceof SourceComponent) {
-      this.components.get(key).set(this.sourceKey(component), component);
+      const sourceKey = this.sourceKey(component);
+      added = !this.components.get(key).has(sourceKey);
+      this.components.get(key).set(sourceKey, component);
     }
+    return added;
   }
 
   public has(component: ComponentLike): boolean {
+    this.flushNoYield();
+
     const isDirectlyInSet = this.components.has(this.simpleKey(component));
     if (isDirectlyInSet) {
       return true;
@@ -311,28 +321,28 @@ export class ComponentSet extends LazyCollection<MetadataComponent> {
     return false;
   }
 
-  public *[Symbol.iterator](): Iterator<MetadataComponent> {
+  public *[Symbol.iterator](): Iterator<T> {
     for (const [key, sourceComponents] of this.components.entries()) {
       if (sourceComponents.size === 0) {
-        const [typeName, fullName] = key.split(ComponentSet.KEY_DELIMITER);
-        yield {
-          fullName,
-          type: this.registry.getTypeByName(typeName),
-        };
+        const [type, fullName] = key.split(ComponentSet.KEY_DELIMITER);
+        yield this.normalize({ fullName, type });
       } else {
         for (const component of sourceComponents.values()) {
-          yield component;
+          yield this.normalize(component);
         }
       }
     }
+
+    yield* this.flushComponents();
   }
 
   get size(): number {
     let size = 0;
-    for (const collection of this.components.values()) {
-      // just having an entry in the parent map counts as 1
-      size += collection.size === 0 ? 1 : collection.size;
+
+    for (const component of this) {
+      size += 1;
     }
+
     return size;
   }
 
@@ -345,5 +355,28 @@ export class ComponentSet extends LazyCollection<MetadataComponent> {
     const typeName =
       typeof component.type === 'string' ? component.type.toLowerCase().trim() : component.type.id;
     return `${typeName}${ComponentSet.KEY_DELIMITER}${component.fullName}`;
+  }
+
+  private flushNoYield(): void {
+    [...this.flushComponents()];
+  }
+
+  private *flushComponents(): IterableIterator<T> {
+    let next = this.flush.next();
+    while (!next.done && next.value) {
+      if (this.add(next.value)) {
+        yield this.normalize(next.value);
+      }
+      next = this.flush.next();
+    }
+  }
+
+  private normalize(component: ComponentLike): T {
+    return typeof component.type === 'object'
+      ? (component as T)
+      : ({
+          fullName: component.fullName,
+          type: this.registry.getTypeByName(component.type),
+        } as T);
   }
 }

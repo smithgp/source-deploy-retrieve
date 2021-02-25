@@ -55,17 +55,17 @@ describe('MetadataResolver', () => {
     afterEach(() => testUtil.restore());
 
     describe('File Paths', () => {
-      it('Should throw file not found error if given path does not exist', () => {
+      it('should throw file not found error if given path does not exist', () => {
         const path = matchingContentFile.CONTENT_PATHS[0];
 
         assert.throws(
-          () => resolver.resolveSource(path),
+          () => resolver.resolveSource(path).toArray(),
           TypeInferenceError,
           nls.localize('error_path_not_found', [path])
         );
       });
 
-      it('Should determine type for metadata file with known suffix', () => {
+      it('should determine type for metadata file with known suffix', () => {
         const path = matchingContentFile.XML_PATHS[0];
         const access = testUtil.createMetadataResolver([
           {
@@ -84,10 +84,10 @@ describe('MetadataResolver', () => {
             ],
           },
         ]);
-        expect(access.resolveSource(path)).to.deep.equal([matchingContentFile.COMPONENT]);
+        expect(access.resolveSource(path).toArray()).to.deep.equal([matchingContentFile.COMPONENT]);
       });
 
-      it('Should determine type for source file with known suffix', () => {
+      it('should determine type for source file with known suffix', () => {
         const path = matchingContentFile.CONTENT_PATHS[0];
         const access = testUtil.createMetadataResolver([
           {
@@ -101,10 +101,10 @@ describe('MetadataResolver', () => {
             componentMappings: [{ path, component: matchingContentFile.COMPONENT }],
           },
         ]);
-        expect(access.resolveSource(path)).to.deep.equal([matchingContentFile.COMPONENT]);
+        expect(access.resolveSource(path).toArray()).to.deep.equal([matchingContentFile.COMPONENT]);
       });
 
-      it('Should determine type for path of mixed content type', () => {
+      it('should determine type for path of mixed content type', () => {
         const path = taraji.TARAJI_SOURCE_PATHS[1];
         const access = testUtil.createMetadataResolver([
           {
@@ -118,10 +118,10 @@ describe('MetadataResolver', () => {
             componentMappings: [{ path, component: taraji.TARAJI_COMPONENT }],
           },
         ]);
-        expect(access.resolveSource(path)).to.deep.equal([taraji.TARAJI_COMPONENT]);
+        expect(access.resolveSource(path).toArray()).to.deep.equal([taraji.TARAJI_COMPONENT]);
       });
 
-      it('Should determine type for path content files', () => {
+      it('should determine type for path content files', () => {
         const path = matchingContentFile.CONTENT_PATHS[0];
         const access = testUtil.createMetadataResolver([
           {
@@ -136,10 +136,12 @@ describe('MetadataResolver', () => {
             allowContent: false,
           },
         ]);
-        expect(access.resolveSource(path)).to.deep.equal([matchingContentFile.CONTENT_COMPONENT]);
+        expect(access.resolveSource(path).toArray()).to.deep.equal([
+          matchingContentFile.CONTENT_COMPONENT,
+        ]);
       });
 
-      it('Should determine type for inFolder path content files', () => {
+      it('should determine type for inFolder path content files', () => {
         const path = sean.SEAN_FOLDER;
         const access = testUtil.createMetadataResolver([
           {
@@ -158,10 +160,10 @@ describe('MetadataResolver', () => {
             allowContent: false,
           },
         ]);
-        expect(access.resolveSource(path)).to.deep.equal(sean.SEAN_COMPONENTS);
+        expect(access.resolveSource(path).toArray()).to.deep.equal(sean.SEAN_COMPONENTS);
       });
 
-      it('Should determine type for folder files', () => {
+      it('should determine type for folder files', () => {
         const path = gene.GENE_DIR;
         const access = testUtil.createMetadataResolver([
           {
@@ -178,10 +180,10 @@ describe('MetadataResolver', () => {
             allowContent: false,
           },
         ]);
-        expect(access.resolveSource(path)).to.deep.equal([gene.GENE_FOLDER_COMPONENT]);
+        expect(access.resolveSource(path).toArray()).to.deep.equal([gene.GENE_FOLDER_COMPONENT]);
       });
 
-      it('Should not mistake folder component of a mixed content type as that type', () => {
+      it('should not mistake folder component of a mixed content type as that type', () => {
         // this test has coveage on non-mixedContent types as well by nature of the execution path
         const path = mixedContentInFolder.FOLDER_XML_PATH;
         const access = testUtil.createMetadataResolver([
@@ -196,10 +198,12 @@ describe('MetadataResolver', () => {
             componentMappings: [{ path, component: mixedContentInFolder.FOLDER_COMPONENT }],
           },
         ]);
-        expect(access.resolveSource(path)).to.deep.equal([mixedContentInFolder.FOLDER_COMPONENT]);
+        expect(access.resolveSource(path).toArray()).to.deep.equal([
+          mixedContentInFolder.FOLDER_COMPONENT,
+        ]);
       });
 
-      it('Should throw type id error if one could not be determined', () => {
+      it('should throw type id error if one could not be determined', () => {
         const missing = join('path', 'to', 'whatever', 'a.b-meta.xml');
         const access = testUtil.createMetadataResolver([
           {
@@ -208,13 +212,13 @@ describe('MetadataResolver', () => {
           },
         ]);
         assert.throws(
-          () => access.resolveSource(missing),
+          () => access.resolveSource(missing).toArray(),
           TypeInferenceError,
           nls.localize('error_could_not_infer_type', [missing])
         );
       });
 
-      it('Should not return a component if path to metadata xml is forceignored', () => {
+      it('should not return a component if path to metadata xml is forceignored', () => {
         const path = matchingContentFile.XML_PATHS[0];
         const access = testUtil.createMetadataResolver([
           {
@@ -230,10 +234,10 @@ describe('MetadataResolver', () => {
             componentMappings: [{ path, component: matchingContentFile.COMPONENT }],
           },
         ]);
-        expect(access.resolveSource(path).length).to.equal(0);
+        expect(access.resolveSource(path).size).to.equal(0);
       });
 
-      it('Should not return a component if path to content metadata xml is forceignored', () => {
+      it('should not return a component if path to content metadata xml is forceignored', () => {
         const path = matchingContentFile.XML_PATHS[0];
         const access = testUtil.createMetadataResolver([
           {
@@ -249,10 +253,10 @@ describe('MetadataResolver', () => {
             componentMappings: [{ path, component: matchingContentFile.COMPONENT }],
           },
         ]);
-        expect(access.resolveSource(path).length).to.equal(0);
+        expect(access.resolveSource(path).size).to.equal(0);
       });
 
-      it('Should not return a component if path to folder metadata xml is forceignored', () => {
+      it('should not return a component if path to folder metadata xml is forceignored', () => {
         const path = gene.GENE_FOLDER_XML_PATH;
         const access = testUtil.createMetadataResolver([
           {
@@ -270,12 +274,12 @@ describe('MetadataResolver', () => {
             ],
           },
         ]);
-        expect(access.resolveSource(path).length).to.equal(0);
+        expect(access.resolveSource(path).size).to.equal(0);
       });
     });
 
     describe('Directory Paths', () => {
-      it('Should return all components in a directory', () => {
+      it('should return all components in a directory', () => {
         const resolver = testUtil.createMetadataResolver([
           {
             dirPath: xmlInFolder.COMPONENT_FOLDER_PATH,
@@ -292,12 +296,12 @@ describe('MetadataResolver', () => {
             componentMappings,
           },
         ]);
-        expect(resolver.resolveSource(xmlInFolder.COMPONENT_FOLDER_PATH)).to.deep.equal(
+        expect(resolver.resolveSource(xmlInFolder.COMPONENT_FOLDER_PATH).toArray()).to.deep.equal(
           xmlInFolder.COMPONENTS
         );
       });
 
-      it('Should walk all file and directory children', () => {
+      it('should walk all file and directory children', () => {
         const { TYPE_DIRECTORY: MCF_DIR } = matchingContentFile;
         const stuffDir = join(MCF_DIR, 'hasStuff');
         const noStuffDir = join(MCF_DIR, 'noStuff');
@@ -368,14 +372,14 @@ describe('MetadataResolver', () => {
             ],
           },
         ]);
-        expect(access.resolveSource(MCF_DIR)).to.deep.equal([
+        expect(access.resolveSource(MCF_DIR).toArray()).to.deep.equal([
           matchingContentFile.COMPONENT,
           kathyComponent2,
           mcfComponent2,
         ]);
       });
 
-      it('Should handle the folder of a mixed content folder type', () => {
+      it('should handle the folder of a mixed content folder type', () => {
         const access = testUtil.createMetadataResolver([
           {
             dirPath: mixedContentInFolder.COMPONENT_FOLDER_PATH,
@@ -397,13 +401,12 @@ describe('MetadataResolver', () => {
             ],
           },
         ]);
-        expect(access.resolveSource(mixedContentInFolder.COMPONENT_FOLDER_PATH)).to.deep.equal([
-          mixedContentInFolder.COMPONENTS[0],
-          mixedContentInFolder.COMPONENTS[1],
-        ]);
+        expect(
+          access.resolveSource(mixedContentInFolder.COMPONENT_FOLDER_PATH).toArray()
+        ).to.deep.equal([mixedContentInFolder.COMPONENTS[0], mixedContentInFolder.COMPONENTS[1]]);
       });
 
-      it('Should return a component for a directory that is content or a child of content', () => {
+      it('should return a component for a directory that is content or a child of content', () => {
         const { TARAJI_CONTENT_PATH } = taraji;
         const access = testUtil.createMetadataResolver([
           {
@@ -426,7 +429,9 @@ describe('MetadataResolver', () => {
             ],
           },
         ]);
-        expect(access.resolveSource(TARAJI_CONTENT_PATH)).to.deep.equal([taraji.TARAJI_COMPONENT]);
+        expect(access.resolveSource(TARAJI_CONTENT_PATH).toArray()).to.deep.equal([
+          taraji.TARAJI_COMPONENT,
+        ]);
       });
 
       it('Should not add duplicates of a component when the content has multiple -meta.xmls', () => {
@@ -454,10 +459,10 @@ describe('MetadataResolver', () => {
             ],
           },
         ]);
-        expect(access.resolveSource(bundle.TYPE_DIRECTORY)).to.deep.equal([COMPONENT]);
+        expect(access.resolveSource(bundle.TYPE_DIRECTORY).toArray()).to.deep.equal([COMPONENT]);
       });
 
-      it('Should not add duplicate component if directory content and xml are at the same level', () => {
+      it('should not add duplicate component if directory content and xml are at the same level', () => {
         const access = testUtil.createMetadataResolver(TARAJI_VIRTUAL_FS);
         const component = SourceComponent.createVirtualComponent(
           TARAJI_COMPONENT,
@@ -473,7 +478,7 @@ describe('MetadataResolver', () => {
           },
         ]);
 
-        expect(access.resolveSource(TARAJI_DIR)).to.deep.equal([component]);
+        expect(access.resolveSource(TARAJI_DIR).toArray()).to.deep.equal([component]);
       });
 
       it('should stop resolution if parent component is resolved', () => {
@@ -487,7 +492,7 @@ describe('MetadataResolver', () => {
             ],
           },
         ]);
-        expect(access.resolveSource(REGINA_PATH)).to.deep.equal([REGINA_COMPONENT]);
+        expect(access.resolveSource(REGINA_PATH).toArray()).to.deep.equal([REGINA_COMPONENT]);
       });
 
       it('should return expected child SourceComponent when given a subdirectory of a folderPerType component', () => {
@@ -496,7 +501,9 @@ describe('MetadataResolver', () => {
         const expectedComponent = new SourceComponent(REGINA_COMPONENT, tree);
         const children = expectedComponent.getChildren();
         const expectedChild = children.find((c) => c.xml === REGINA_CHILD_XML_PATH_2);
-        expect(access.resolveSource(REGINA_CHILD_DIR_PATH)).to.deep.equal([expectedChild]);
+        expect(access.resolveSource(REGINA_CHILD_DIR_PATH).toArray()).to.deep.equal([
+          expectedChild,
+        ]);
       });
 
       /**
@@ -518,7 +525,7 @@ describe('MetadataResolver', () => {
           },
         ]);
         const access = new MetadataResolver(mockRegistry, tree);
-        expect(access.resolveSource(bundle.TYPE_DIRECTORY)).to.deep.equal([
+        expect(access.resolveSource(bundle.TYPE_DIRECTORY).toArray()).to.deep.equal([
           new SourceComponent(
             {
               name: 'a',
@@ -555,7 +562,7 @@ describe('MetadataResolver', () => {
             ],
           },
         ]);
-        expect(access.resolveSource(dirPath).length).to.equal(0);
+        expect(access.resolveSource(dirPath).size).to.equal(0);
       });
     });
 
@@ -583,7 +590,7 @@ describe('MetadataResolver', () => {
         };
         const filter = new ComponentSet([toFilter]);
 
-        const result = resolver.resolveSource(xmlInFolder.COMPONENT_FOLDER_PATH, filter);
+        const result = resolver.resolveSource(xmlInFolder.COMPONENT_FOLDER_PATH, filter).toArray();
 
         expect(result).to.deep.equal([xmlInFolder.COMPONENTS[0]]);
       });
@@ -617,10 +624,9 @@ describe('MetadataResolver', () => {
         ];
         const filter = new ComponentSet(toFilter);
 
-        const result = resolver.resolveSource(
-          decomposedtoplevel.DECOMPOSED_TOP_LEVEL_COMPONENT_PATH,
-          filter
-        );
+        const result = resolver
+          .resolveSource(decomposedtoplevel.DECOMPOSED_TOP_LEVEL_COMPONENT_PATH, filter)
+          .toArray();
 
         expect(result).to.deep.equal(children);
       });
@@ -645,7 +651,7 @@ describe('MetadataResolver', () => {
           },
         ]);
 
-        const result = resolver.resolveSource(bundle.TYPE_DIRECTORY, filter);
+        const result = resolver.resolveSource(bundle.TYPE_DIRECTORY, filter).toArray();
 
         expect(result).to.deep.equal([bundle.COMPONENT]);
       });
@@ -674,7 +680,7 @@ describe('MetadataResolver', () => {
         ]);
         const filter = new ComponentSet();
 
-        const result = resolver.resolveSource(bundle.TYPE_DIRECTORY, filter);
+        const result = resolver.resolveSource(bundle.TYPE_DIRECTORY, filter).toArray();
 
         expect(result).to.deep.equal([]);
       });

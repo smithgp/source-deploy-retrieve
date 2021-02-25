@@ -30,14 +30,14 @@ describe('Tooling Retrieve', () => {
   metaXMLFile += '\t<apiVersion>32.0</apiVersion>\n';
   metaXMLFile += '\t<status>Active</status>\n';
   metaXMLFile += '</ApexClass>';
-  const mdComponents: SourceComponent[] = [
+  const mdComponents = new ComponentSet<SourceComponent>([
     new SourceComponent({
       type: registryData.types.apexclass,
       name: 'myTestClass',
       xml: path.join('file', 'path', 'myTestClass.cls-meta.xml'),
       content: path.join('file', 'path', 'myTestClass.cls'),
     }),
-  ];
+  ]);
   const apexClassQueryResult: QueryResult = {
     done: true,
     entityTypeName: 'ApexClass',
@@ -152,7 +152,7 @@ describe('Tooling Retrieve', () => {
       xml: path.join('file', 'path', 'myTestClass.cls-meta.xml'),
       content: path.join('file', 'path', 'myTestClass.cls'),
     });
-    sandboxStub.stub(resolver, 'resolveSource').returns([component]);
+    sandboxStub.stub(resolver, 'resolveSource').returns(new ComponentSet([component]));
 
     sandboxStub
       .stub(mockConnection.tooling, 'query')
@@ -209,7 +209,7 @@ describe('Tooling Retrieve', () => {
       failures: [],
       successes: [
         {
-          component: mdComponents[0],
+          component: mdComponents.first(),
         },
       ],
     });
@@ -237,8 +237,8 @@ describe('Tooling Retrieve', () => {
       failures: [
         {
           component: {
-            fullName: mdComponents[0].fullName,
-            type: mdComponents[0].type,
+            fullName: mdComponents.first().fullName,
+            type: mdComponents.first().type,
           },
           message: nls.localize('error_md_not_present_in_org', 'myTestClass'),
         },
@@ -247,20 +247,21 @@ describe('Tooling Retrieve', () => {
   });
 
   it('should throw an error when trying to retrieve more than one type at a time', async () => {
-    mdComponents.push(
+    const components = new ComponentSet([
       new SourceComponent({
         type: registryData.types.apexclass,
         name: 'anotherClass',
         xml: path.join('file', 'path', 'anotherClass.cls-meta.xml'),
         content: path.join('file', 'path', 'anotherClass.cls'),
-      })
-    );
+      }),
+      ...mdComponents,
+    ]);
 
     const toolingAPI = new ToolingApi(mockConnection, resolver);
 
     try {
       await toolingAPI.retrieve({
-        components: new ComponentSet(mdComponents),
+        components,
       });
       fail('Retrieve should have thrown an error');
     } catch (e) {

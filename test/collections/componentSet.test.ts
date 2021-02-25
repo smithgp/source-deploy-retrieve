@@ -130,7 +130,7 @@ describe('ComponentSet', () => {
     describe('fromSource', () => {
       it('should initialize with source backed components', () => {
         const set = ComponentSet.fromSource('.', { registry: mockRegistry, tree });
-        const expected = new MetadataResolver(mockRegistry, tree).resolveSource('.');
+        const expected = new MetadataResolver(mockRegistry, tree).resolveSource('.').toArray();
         expect(Array.from(set)).to.deep.equal(expected);
       });
     });
@@ -189,7 +189,7 @@ describe('ComponentSet', () => {
           resolve: '.',
         });
 
-        const expected = new MetadataResolver(mockRegistry, tree).resolveSource('.');
+        const expected = new MetadataResolver(mockRegistry, tree).resolveSource('.').toArray();
         const missingIndex = expected.findIndex((c) => c.fullName === 'c');
         expected.splice(missingIndex, 1);
 
@@ -203,7 +203,7 @@ describe('ComponentSet', () => {
           resolve: ['decomposedTopLevels', 'mixedSingleFiles'],
         });
 
-        const expected = new MetadataResolver(mockRegistry, tree).resolveSource('.');
+        const expected = new MetadataResolver(mockRegistry, tree).resolveSource('.').toArray();
         const missingIndex = expected.findIndex((c) => c.fullName === 'c');
         expected.splice(missingIndex, 1);
 
@@ -230,15 +230,19 @@ describe('ComponentSet', () => {
       });
 
       it('should resolve components when literalWildcard = false and wildcard is encountered', async () => {
-        const set = await ComponentSet.fromManifestFile('wildcard.xml', {
-          registry: mockRegistry,
-          tree,
-          resolve: '.',
-          literalWildcard: false,
-        });
-        const expected = new MetadataResolver(mockRegistry, tree).resolveSource('mixedSingleFiles');
+        const components = (
+          await ComponentSet.fromManifestFile('wildcard.xml', {
+            registry: mockRegistry,
+            tree,
+            resolve: '.',
+            literalWildcard: false,
+          })
+        ).toArray();
+        const expected = new MetadataResolver(mockRegistry, tree)
+          .resolveSource('mixedSingleFiles')
+          .toArray();
 
-        expect(Array.from(set)).to.deep.equal(expected);
+        expect(components).to.deep.equal(expected);
       });
 
       it('should resolve components and add literal wildcard component when literalWildcard = true and resolve != undefined', async () => {
@@ -290,7 +294,7 @@ describe('ComponentSet', () => {
           mockRegistry
         );
 
-        expect(Array.from(set)).to.deep.equal([
+        expect(set.toArray()).to.deep.equal([
           {
             fullName: 'Test1',
             type: mockRegistryData.types.decomposedtoplevel,
@@ -355,7 +359,7 @@ describe('ComponentSet', () => {
   describe('resolveSourceComponents', () => {
     it('should resolve components and add to package', () => {
       const set = new ComponentSet(undefined, mockRegistry);
-      const expected = new MetadataResolver(mockRegistry, tree).resolveSource('.');
+      const expected = new MetadataResolver(mockRegistry, tree).resolveSource('.').toArray();
       const result = set.resolveSourceComponents('.', { tree });
 
       expect(Array.from(result)).to.deep.equal(expected);
@@ -366,7 +370,7 @@ describe('ComponentSet', () => {
       const set = new ComponentSet(undefined, mockRegistry);
       const filter = [{ fullName: 'b', type: mockRegistryData.types.mixedcontentsinglefile }];
 
-      const expected = new MetadataResolver(mockRegistry, tree).resolveSource('.');
+      const expected = new MetadataResolver(mockRegistry, tree).resolveSource('.').toArray();
       expected.splice(
         expected.findIndex((c) => c.fullName === 'a'),
         1
@@ -396,7 +400,8 @@ describe('ComponentSet', () => {
       const set = new ComponentSet(undefined, mockRegistry);
       const result = set.resolveSourceComponents('.', { tree, filter });
       const expected = new MetadataResolver(mockRegistry, tree)
-        .resolveSource('decomposedTopLevels')[0]
+        .resolveSource('decomposedTopLevels')
+        .first()
         .getChildren();
 
       expect(Array.from(result)).to.deep.equal(expected);
@@ -406,14 +411,19 @@ describe('ComponentSet', () => {
     it('should resolve child if parent is in filter option', () => {
       const pathToChild = join('decomposedTopLevels', 'a', 'child1.g-meta.xml');
       const set = new ComponentSet(undefined, mockRegistry);
-      const result = set.resolveSourceComponents(pathToChild, {
-        tree,
-        filter: [{ fullName: 'a', type: 'decomposedtoplevel' }],
-      });
-      const expected = new MetadataResolver(mockRegistry, tree).resolveSource(pathToChild);
+      const expected = new MetadataResolver(mockRegistry, tree)
+        .resolveSource(pathToChild)
+        .toArray();
 
-      expect(Array.from(result)).to.deep.equal(expected);
-      expect(Array.from(set)).to.deep.equal(expected);
+      const result = set
+        .resolveSourceComponents(pathToChild, {
+          tree,
+          filter: [{ fullName: 'a', type: 'decomposedtoplevel' }],
+        })
+        .toArray();
+
+      expect(result).to.deep.equal(expected);
+      expect(set.toArray()).to.deep.equal(expected);
     });
   });
 
@@ -437,21 +447,27 @@ describe('ComponentSet', () => {
     it('should return source-backed components in the set', () => {
       const set = ComponentSet.fromSource('mixedSingleFiles', { registry: mockRegistry, tree });
       set.add({ fullName: 'Test', type: 'decomposedtoplevel' });
-      const expected = new MetadataResolver(mockRegistry, tree).resolveSource('mixedSingleFiles');
+      const expected = new MetadataResolver(mockRegistry, tree)
+        .resolveSource('mixedSingleFiles')
+        .toArray();
 
-      expect(set.getSourceComponents().toArray()).to.deep.equal(expected);
+      const result = set.getSourceComponents().toArray();
+
+      expect(result).to.deep.equal(expected);
     });
 
     it('should return source-backed components that match the given metadata member', () => {
       const set = ComponentSet.fromSource('.', { registry: mockRegistry, tree });
-      const expected = new MetadataResolver(mockRegistry, tree).resolveSource(
-        join('mixedSingleFiles', 'b.foo')
-      );
+      const expected = new MetadataResolver(mockRegistry, tree)
+        .resolveSource(join('mixedSingleFiles', 'b.foo'))
+        .toArray();
+
+      const result = set
+        .getSourceComponents({ fullName: 'b', type: 'mixedcontentsinglefile' })
+        .toArray();
 
       expect(set.size).to.equal(3);
-      expect(
-        Array.from(set.getSourceComponents({ fullName: 'b', type: 'mixedcontentsinglefile' }))
-      ).to.deep.equal(expected);
+      expect(result).to.deep.equal(expected);
     });
   });
 

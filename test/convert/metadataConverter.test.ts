@@ -250,11 +250,13 @@ describe('MetadataConverter', () => {
 
       const pipelineArgs = pipelineStub.firstCall.args;
       validatePipelineArgs(pipelineArgs, 'source');
-      expect(pipelineArgs[1].mergeSet).to.deep.equal(new ComponentSet(COMPONENTS));
+      expect(pipelineArgs[1].mergeSet.toArray()).to.deep.equal(COMPONENTS);
       expect(pipelineArgs[2].rootDestination).to.equal(defaultDirectory);
     });
 
     it('should ensure merge set contains parents of child components instead of the children themselves', async () => {
+      const expected = [REGINA_CHILD_COMPONENT_1.parent];
+
       await converter.convert(components, 'source', {
         type: 'merge',
         defaultDirectory,
@@ -263,9 +265,7 @@ describe('MetadataConverter', () => {
 
       const pipelineArgs = pipelineStub.firstCall.args;
       validatePipelineArgs(pipelineArgs, 'source');
-      expect(pipelineArgs[1].mergeSet).to.deep.equal(
-        new ComponentSet([REGINA_CHILD_COMPONENT_1.parent])
-      );
+      expect(pipelineArgs[1].mergeSet.toArray()).to.deep.equal(expected);
     });
   });
 });

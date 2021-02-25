@@ -13,6 +13,7 @@ import { MetadataResolver, registryData, SourceComponent } from '../../src/metad
 import { ComponentStatus, ToolingApi, ToolingDeployStatus } from '../../src/client';
 import { ContainerDeploy } from '../../src/client/deployStrategies';
 import { nls } from '../../src/i18n';
+import { ComponentSet } from '../../src';
 
 const $$ = testSetup();
 
@@ -50,7 +51,9 @@ describe('Tooling API tests', () => {
       xml: 'myTestClass.cls-meta.xml',
       content: 'file/path/myTestClass.cls',
     });
-    sandboxStub.stub(MetadataResolver.prototype, 'resolveSource').returns([component]);
+    sandboxStub
+      .stub(MetadataResolver.prototype, 'resolveSource')
+      .returns(new ComponentSet([component]));
     sandboxStub.stub(ContainerDeploy.prototype, 'buildMetadataField').returns(testMetadataField);
     const mockContainerDeploy = sandboxStub.stub(ContainerDeploy.prototype, 'deploy').resolves({
       id: '123',
@@ -71,13 +74,15 @@ describe('Tooling API tests', () => {
   });
 
   it('should exit deploy for unsupported types', async () => {
-    sandboxStub.stub(MetadataResolver.prototype, 'resolveSource').returns([
-      new SourceComponent({
-        type: registryData.types.flexipage,
-        name: '',
-        xml: '',
-      }),
-    ]);
+    sandboxStub.stub(MetadataResolver.prototype, 'resolveSource').returns(
+      new ComponentSet([
+        new SourceComponent({
+          type: registryData.types.flexipage,
+          name: '',
+          xml: '',
+        }),
+      ])
+    );
     const deployLibrary = new ToolingApi(mockConnection, resolver);
 
     try {

@@ -13,7 +13,7 @@ import { ComponentStatus, FileResponse, MetadataApiRetrieveStatus } from '../../
 import { MetadataApiRetrieveError } from '../../src/errors';
 import { nls } from '../../src/i18n';
 import { MOCK_DEFAULT_OUTPUT, stubMetadataRetrieve } from '../mock/client/transferOperations';
-import { matchingContentFile, mockRegistry, mockRegistryData, xmlInFolder } from '../mock/registry';
+import { mockRegistry, mockRegistryData, xmlInFolder } from '../mock/registry';
 import { COMPONENT } from '../mock/registry/matchingContentFileConstants';
 import { REGINA_COMPONENT } from '../mock/registry/reginaConstants';
 
@@ -127,7 +127,8 @@ describe('MetadataApiRetrieve', async () => {
       const result = await operation.start();
       const expected = new RetrieveResult(response, toRetrieve);
 
-      expect(result).to.deep.equal(expected);
+      expect(result.components.toArray()).to.deep.equal(expected.components.toArray());
+      expect(result.response).to.deep.equal(expected.response);
     });
 
     it('should construct a result object with no components when no components are retrieved', async () => {

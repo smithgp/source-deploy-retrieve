@@ -28,15 +28,17 @@ describe('DecomposedMetadataTransformer', () => {
       const [child1, child2] = component.getChildren();
       const context = new ConvertContext();
       const transformer = new DecomposedMetadataTransformer(mockRegistry, context);
+      const expectedChildren = [child2, child1];
 
-      expect(await transformer.toMetadataFormat(child1)).to.deep.equal([]);
-      expect(await transformer.toMetadataFormat(child2)).to.deep.equal([]);
-      expect(context.recomposition.state).to.deep.equal({
-        [component.fullName]: {
-          component,
-          children: new ComponentSet([child1, child2], mockRegistry),
-        },
-      });
+      const result1 = await transformer.toMetadataFormat(child1);
+      const result2 = await transformer.toMetadataFormat(child2);
+      const state = context.recomposition.state[component.fullName];
+
+      expect(result1).to.deep.equal([]);
+      expect(result2).to.deep.equal([]);
+      expect(state).to.not.be.undefined;
+      expect(state.component).to.deep.equal(component);
+      expect(state.children.toArray()).to.deep.equal(expectedChildren);
     });
 
     it('should defer write operations and set context state when a parent component is given', async () => {
@@ -53,18 +55,19 @@ describe('DecomposedMetadataTransformer', () => {
     });
 
     it('should defer write operations and set context state when a child and parent component is given', async () => {
-      const [child] = component.getChildren();
+      const children = component.getChildren();
       const context = new ConvertContext();
       const transformer = new DecomposedMetadataTransformer(mockRegistry, context);
 
-      expect(await transformer.toMetadataFormat(child)).to.deep.equal([]);
-      expect(await transformer.toMetadataFormat(component)).to.deep.equal([]);
-      expect(context.recomposition.state).to.deep.equal({
-        [component.fullName]: {
-          component,
-          children: new ComponentSet([child].concat(component.getChildren()), mockRegistry),
-        },
-      });
+      const childResult = await transformer.toMetadataFormat(children[0]);
+      const parentResult = await transformer.toMetadataFormat(component);
+      const state = context.recomposition.state[component.fullName];
+
+      expect(childResult).to.deep.equal([]);
+      expect(parentResult).to.deep.equal([]);
+      expect(state).to.not.be.undefined;
+      expect(state.component).to.equal(component);
+      expect(state.children.toArray()).to.deep.equal(children);
     });
   });
 
