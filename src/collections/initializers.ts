@@ -5,10 +5,14 @@
  * For full license text, see LICENSE.txt file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
 
-import { ComponentSet } from '.';
-import { TreeContainer, SourceComponent, MetadataResolver } from '..';
+import { ComponentSet } from './componentSet';
+import {
+  TreeContainer,
+  SourceComponent,
+  MetadataResolver,
+  RegistryAccess,
+} from '../metadata-registry';
 import { RegistryOptions, TreeOptions } from '../common';
-import { RegistryAccess } from '../metadata-registry';
 
 interface ResolveSourceOptions extends Partial<TreeOptions>, Partial<RegistryOptions> {
   /**
@@ -47,7 +51,7 @@ export function resolveSource(
   let fsPaths = [];
   let registry: RegistryAccess;
   let tree: TreeContainer;
-  let filter: ComponentSet;
+  let inclusiveFilter: ComponentSet;
 
   if (Array.isArray(input)) {
     fsPaths = input;
@@ -55,11 +59,12 @@ export function resolveSource(
     fsPaths = input.fsPaths;
     registry = input.registry ?? registry;
     tree = input.tree ?? tree;
+    inclusiveFilter = input.inclusiveFilter;
   } else {
     fsPaths = [input];
   }
 
   const resolver = new MetadataResolver(registry, tree);
 
-  return resolver.resolveSource(fsPaths, filter);
+  return resolver.resolveSource(fsPaths, inclusiveFilter);
 }

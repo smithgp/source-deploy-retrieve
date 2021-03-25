@@ -13,21 +13,11 @@ import {
 } from '../client';
 import { MetadataComponent, XML_DECL, XML_NS_KEY, XML_NS_URL } from '../common';
 import { ComponentSetError } from '../errors';
-import {
-  MetadataResolver,
-  NodeFSTreeContainer,
-  RegistryAccess,
-  SourceComponent,
-} from '../metadata-registry';
-import {
-  PackageTypeMembers,
-  FromSourceOptions,
-  FromManifestOptions,
-  PackageManifestObject,
-  ResolveOptions,
-} from './types';
+import { NodeFSTreeContainer, RegistryAccess, SourceComponent } from '../metadata-registry';
+import { PackageTypeMembers, FromManifestOptions, PackageManifestObject } from './types';
 import { ComponentLike } from '../common/types';
 import { LazyCollection } from './lazyCollection';
+import { resolveSource } from './initializers';
 
 export type DeploySetOptions = Omit<MetadataApiDeployOptions, 'components'>;
 export type RetrieveSetOptions = Omit<MetadataApiRetrieveOptions, 'components'>;
@@ -47,18 +37,6 @@ export class ComponentSet<T extends MetadataComponent = MetadataComponent> exten
     this.registry = registry;
     this.apiVersion = this.registry.apiVersion;
     this.flush = components[Symbol.iterator]();
-  }
-
-  /**
-   * Create a set by resolving components from source.
-   *
-   * @param fsPath Path to resolve components from
-   * @param options
-   */
-  public static fromSource(fsPath: string, options: FromSourceOptions = {}): ComponentSet {
-    const ws = new ComponentSet(undefined, options.registry);
-    ws.resolveSourceComponents(fsPath, options);
-    return ws;
   }
 
   /**
@@ -103,12 +81,16 @@ export class ComponentSet<T extends MetadataComponent = MetadataComponent> exten
 
     if (shouldResolve) {
       // if it's a string, don't iterate over the characters
-      const toResolve = typeof options.resolve === 'string' ? [options.resolve] : options.resolve;
-      for (const fsPath of toResolve) {
-        ws.resolveSourceComponents(fsPath, {
-          tree,
-          filter: filterSet,
-        });
+      const toResolve =
+        typeof options.resolve === 'string' ? [options.resolve] : Array.from(options.resolve);
+      const components = resolveSource({
+        fsPaths: toResolve,
+        tree,
+        inclusiveFilter: filterSet,
+        registry,
+      });
+      for (const component of components) {
+        ws.add(component);
       }
     }
 
@@ -205,32 +187,6 @@ export class ComponentSet<T extends MetadataComponent = MetadataComponent> exten
         version: this.apiVersion,
       },
     };
-  }
-
-  /**
-   * Resolve source backed components and add them to the set.
-   *
-   * @param fsPath: File path to resolve
-   * @param options
-   */
-  public resolveSourceComponents(fsPath: string, options: ResolveOptions = {}): ComponentSet {
-    let filterSet: ComponentSet;
-
-    if (options?.filter) {
-      const { filter } = options;
-      filterSet = filter instanceof ComponentSet ? filter : new ComponentSet(filter, this.registry);
-    }
-
-    const resolver = new MetadataResolver(this.registry, options?.tree);
-    const resolved = resolver.resolveSource(fsPath, filterSet);
-    const sourceComponents = new ComponentSet();
-
-    for (const component of resolved) {
-      this.add(component);
-      sourceComponents.add(component);
-    }
-
-    return sourceComponents;
   }
 
   /**
