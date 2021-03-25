@@ -19,6 +19,7 @@ import { ComponentSet } from '../collections';
 
 /**
  * Resolver for metadata type and component objects.
+ * @internal
  */
 export class MetadataResolver {
   private forceIgnore: ForceIgnore;
@@ -255,37 +256,4 @@ export class MetadataResolver {
       !!this.parseAsFolderMetadataXml(fsPath)
     );
   }
-}
-
-interface ResolveSourceOptions {
-  fsPaths: string[];
-  inclusiveFilter?: ComponentSet;
-  tree?: TreeContainer;
-  registry?: RegistryAccess;
-}
-
-export function resolveSource(fsPath: string): ComponentSet<SourceComponent>;
-export function resolveSource(fsPaths: string[]): ComponentSet<SourceComponent>;
-export function resolveSource(options: ResolveSourceOptions): ComponentSet<SourceComponent>;
-export function resolveSource(
-  input: string | string[] | ResolveSourceOptions
-): ComponentSet<SourceComponent> {
-  let fsPaths = [];
-  let registry: RegistryAccess;
-  let tree: TreeContainer;
-  let filter: ComponentSet;
-
-  if (Array.isArray(input)) {
-    fsPaths = input;
-  } else if (typeof input === 'object') {
-    fsPaths = input.fsPaths;
-    registry = input.registry ?? registry;
-    tree = input.tree ?? tree;
-  } else {
-    fsPaths = [input];
-  }
-
-  const resolver = new MetadataResolver(registry, tree);
-
-  return resolver.resolveSource(fsPaths, filter);
 }

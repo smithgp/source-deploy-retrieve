@@ -5,7 +5,13 @@
  * For full license text, see LICENSE.txt file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
 
-import { TypeIndex, SuffixIndex, DirectoryIndex } from '../metadata-registry';
+import {
+  TypeIndex,
+  SuffixIndex,
+  DirectoryIndex,
+  TreeContainer,
+  RegistryAccess,
+} from '../metadata-registry';
 
 /**
  * File system path to a source file of a metadata component.
@@ -81,3 +87,11 @@ export interface MetadataMember {
 }
 
 export type ComponentLike = MetadataComponent | MetadataMember;
+
+export interface TreeOptions {
+  tree: TreeContainer;
+}
+
+export interface RegistryOptions {
+  registry: RegistryAccess;
+}
