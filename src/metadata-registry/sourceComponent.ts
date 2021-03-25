@@ -9,12 +9,13 @@ import { join, basename } from 'path';
 import { parse } from 'fast-xml-parser';
 import { ForceIgnore } from './forceIgnore';
 import { parseMetadataXml } from '../utils/registry';
-import { baseName } from '../utils';
+import { baseName, normalizeToArray } from '../utils';
 import { NodeFSTreeContainer, VirtualTreeContainer } from './treeContainers';
 import { DEFAULT_PACKAGE_ROOT_SFDX, MetadataType, SourcePath, MetadataComponent } from '../common';
-import { JsonMap } from '@salesforce/ts-types';
+import { get, getString, JsonMap } from '@salesforce/ts-types';
 import { SfdxFileFormat } from '../convert';
 import { trimUntil } from '../utils/path';
+import { fs } from '@salesforce/core';
 
 export type ComponentProperties = {
   name: string;
@@ -72,14 +73,26 @@ export class SourceComponent implements MetadataComponent {
   }
 
   public getChildren(): SourceComponent[] {
-    return this.content && !this.parent && this.type.children
-      ? this.getChildrenInternal(this.content)
-      : [];
+    if (this.content && !this.parent && this.type.children) {
+      return this.getDecomposedChildren(this.content);
+    } else if (!this.parent && this.type.children) {
+      return this.getNonDecomposedChildren();
+    } else {
+      return [];
+    }
   }
 
   public async parseXml<T = JsonMap>(): Promise<T> {
     if (this.xml) {
       const contents = await this.tree.readFile(this.xml);
+      return parse(contents.toString(), { ignoreAttributes: false }) as T;
+    }
+    return {} as T;
+  }
+
+  public parseXmlSync<T = JsonMap>(): T {
+    if (this.xml) {
+      const contents = fs.readFileSync(this.xml);
       return parse(contents.toString(), { ignoreAttributes: false }) as T;
     }
     return {} as T;
@@ -106,7 +119,7 @@ export class SourceComponent implements MetadataComponent {
     return relativePath;
   }
 
-  private getChildrenInternal(dirPath: SourcePath): SourceComponent[] {
+  private getDecomposedChildren(dirPath: SourcePath): SourceComponent[] {
     const children: SourceComponent[] = [];
     for (const fsPath of this.walk(dirPath)) {
       const childXml = parseMetadataXml(fsPath);
@@ -128,6 +141,26 @@ export class SourceComponent implements MetadataComponent {
       }
     }
     return children;
+  }
+
+  private getNonDecomposedChildren(): SourceComponent[] {
+    const parsed = this.parseXmlSync();
+    const elements = normalizeToArray(get(parsed, this.type.strategies.elementParser.xmlPath, []));
+    return elements.map((element) => {
+      // WARNING: for NonDecomposed children we expect the first child type to be the only child type,
+      // which might not be a valid assumption long term
+      const [childTypeId] = Object.keys(this.type.children.types);
+      return new SourceComponent(
+        {
+          name: getString(element, this.type.strategies.elementParser.nameAttr),
+          type: this.type.children.types[childTypeId],
+          xml: this.xml,
+          parent: this,
+        },
+        this._tree,
+        this.forceIgnore
+      );
+    });
   }
 
   private *walk(fsPath: SourcePath): IterableIterator<SourcePath> {

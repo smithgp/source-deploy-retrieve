@@ -52,6 +52,7 @@ export class MetadataConverter {
     try {
       // it's possible the components came from a component set, so this may be redundant in some cases...
       const manifestContents = new ComponentSet(components, this.registry).getPackageXml();
+      console.log(manifestContents);
       const isSource = targetFormat === 'source';
       const tasks = [];
 
