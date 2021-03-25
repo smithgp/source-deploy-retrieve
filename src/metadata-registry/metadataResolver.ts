@@ -40,11 +40,11 @@ export class MetadataResolver {
    * Resolve metadata source paths into component objects.
    *
    * @param fsPath File path to metadata or directory
-   * @param filter Set to filter which components are resolved
+   * @param inclusiveFilter Set to filter which components are resolved
    */
   public resolveSource(
     fsPathOrPaths: string | string[],
-    filter?: ComponentSet
+    inclusiveFilter?: ComponentSet
   ): ComponentSet<SourceComponent> {
     const fsPaths = typeof fsPathOrPaths === 'string' ? [fsPathOrPaths] : fsPathOrPaths;
 
@@ -60,7 +60,7 @@ export class MetadataResolver {
           resolver.forceIgnore = ForceIgnore.findAndCreate(fsPath);
 
           if (resolver.tree.isDirectory(fsPath) && !resolver.resolveDirectoryAsComponent(fsPath)) {
-            yield* resolver.resolveSourceRecursive(fsPath, filter);
+            yield* resolver.resolveSourceRecursive(fsPath, inclusiveFilter);
             continue;
           }
 
@@ -258,31 +258,34 @@ export class MetadataResolver {
 }
 
 interface ResolveSourceOptions {
-  paths: string[];
+  fsPaths: string[];
+  inclusiveFilter?: ComponentSet;
   tree?: TreeContainer;
   registry?: RegistryAccess;
 }
 
 export function resolveSource(fsPath: string): ComponentSet<SourceComponent>;
 export function resolveSource(fsPaths: string[]): ComponentSet<SourceComponent>;
+export function resolveSource(options: ResolveSourceOptions): ComponentSet<SourceComponent>;
 export function resolveSource(
   input: string | string[] | ResolveSourceOptions
 ): ComponentSet<SourceComponent> {
   let fsPaths = [];
-  let registry = new RegistryAccess();
-  let tree = new NodeFSTreeContainer();
+  let registry: RegistryAccess;
+  let tree: TreeContainer;
+  let filter: ComponentSet;
 
-  if (typeof input === 'object' && !Array.isArray(input)) {
-    const options = input as ResolveSourceOptions;
-    fsPaths = options.paths;
-    registry = options.registry ?? registry;
-    tree = options.tree ?? tree;
+  if (Array.isArray(input)) {
+    fsPaths = input;
+  } else if (typeof input === 'object') {
+    fsPaths = input.fsPaths;
+    registry = input.registry ?? registry;
+    tree = input.tree ?? tree;
   } else {
-    fsPaths = typeof input === 'string' ? [input] : input;
+    fsPaths = [input];
   }
 
   const resolver = new MetadataResolver(registry, tree);
-  // const components = new ComponentSet<SourceComponent>(undefined, registry);
 
-  return resolver.resolveSource(fsPaths);
+  return resolver.resolveSource(fsPaths, filter);
 }
