@@ -39,8 +39,8 @@ export { MetadataType, MetadataComponent, SourcePath } from './common';
 export {
   ComponentSet,
   FromManifestOptions,
-  FromSourceOptions,
   DeploySetOptions,
   RetrieveSetOptions,
-  ResolveOptions,
+  resolveSource,
+  ResolveSourceOptions,
 } from './collections';

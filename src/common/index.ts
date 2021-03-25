@@ -11,6 +11,7 @@ export {
   SourcePath,
   TreeOptions,
   RegistryOptions,
+  OptionalTreeRegistryOptions,
 } from './types';
 export {
   DEFAULT_PACKAGE_ROOT_SFDX,

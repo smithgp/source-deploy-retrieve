@@ -12,9 +12,9 @@ import {
   MetadataResolver,
   RegistryAccess,
 } from '../metadata-registry';
-import { RegistryOptions, TreeOptions } from '../common';
+import { OptionalTreeRegistryOptions } from '../common/types';
 
-interface ResolveSourceOptions extends Partial<TreeOptions>, Partial<RegistryOptions> {
+export interface ResolveSourceOptions extends OptionalTreeRegistryOptions {
   /**
    * File or directory paths to resolve components against
    */

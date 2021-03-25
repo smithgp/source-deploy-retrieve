@@ -95,3 +95,10 @@ export interface TreeOptions {
 export interface RegistryOptions {
   registry: RegistryAccess;
 }
+
+/**
+ * Extendable interface for optional that may optionally provide a TreeContainer and RegistryAccess
+ */
+export interface OptionalTreeRegistryOptions
+  extends Partial<TreeOptions>,
+    Partial<RegistryOptions> {}
