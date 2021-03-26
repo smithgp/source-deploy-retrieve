@@ -213,6 +213,7 @@ export class MetadataApiDeploy extends MetadataTransfer<MetadataApiDeployStatus,
   }
 
   protected async post(result: MetadataApiDeployStatus): Promise<DeployResult> {
+    console.log(result);
     return new DeployResult(result, this.components);
   }
 

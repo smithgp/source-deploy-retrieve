@@ -181,7 +181,8 @@ export class SourceComponent implements MetadataComponent {
   }
 
   get fullName(): string {
-    return `${this.parent ? `${this.parent.fullName}.` : ''}${this.name}`;
+    // return `${this.parent ? `${this.parent.fullName}.` : ''}${this.name}`;
+    return this.name;
   }
 
   get tree(): TreeContainer {
