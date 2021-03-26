@@ -12,8 +12,9 @@ import { set } from '@salesforce/kit';
 import { SourceComponent } from '../../metadata-registry';
 import { WriteInfo } from '../types';
 import deepmerge = require('deepmerge');
-import { DefaultMetadataTransformer } from './defaultMetadataTransformer';
+import { DecomposedMetadataTransformer } from './decomposedMetadataTransformer';
 import { get, JsonMap } from '@salesforce/ts-types';
+import { ComponentSet } from '../..';
 
 /**
  * Metadata Transformer for metadata types with children types that are NOT decomposed into separate files.
@@ -21,7 +22,11 @@ import { get, JsonMap } from '@salesforce/ts-types';
  * Example Types:
  * - CustomLabels
  */
-export class NonDecomposedMetadataTransformer extends DefaultMetadataTransformer {
+export class NonDecomposedMetadataTransformer extends DecomposedMetadataTransformer {
+  public async toMetadataFormat(component: SourceComponent): Promise<WriteInfo[]> {
+    console.log('toMetadataFormat');
+    return super.toMetadataFormat(component);
+  }
   public async toSourceFormat(
     component: SourceComponent,
     mergeWith?: SourceComponent

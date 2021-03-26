@@ -47,6 +47,10 @@ export type MetadataType = {
    */
   folderType?: string;
   /**
+   * If the parent name should be ignored when constructing the type's fullName
+   */
+  ignoreParentName?: boolean;
+  /**
    * Type definitions for child types, if the type has any.
    *
    * __Examples:__ `CustomField` and `CompactLayout` on `CustomObject`

@@ -66,6 +66,7 @@ class RecompositionFinalizer extends ConvertTransactionFinalizer<RecompositionSt
   }
 
   private async recompose(children: ComponentSet, parent: SourceComponent): Promise<JsonMap> {
+    // TODO: fix custom labels "recomposition" here
     const parentXmlObj: JsonMap = await parent.parseXml();
 
     for (const child of children) {
