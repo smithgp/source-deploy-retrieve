@@ -4,8 +4,8 @@
  * Licensed under the BSD 3-Clause license.
  * For full license text, see LICENSE.txt file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
-import { SourcePath } from '../common/types';
-import { SourceComponent } from '.';
+import { Package } from 'jsforce';
+import { SourceComponent } from './sourceComponent';
 import { MetadataType } from '../registry';
 import { TreeContainer } from './treeContainers';
 
@@ -93,6 +93,11 @@ export interface VirtualDirectory {
   children: (VirtualFile | string)[];
 }
 
+export interface ResolveManifestResult {
+  components: MetadataComponent[];
+  package: Package;
+}
+
 /**
  * Infers the source format structure of a metadata component when given a file path.
  */
@@ -103,7 +108,7 @@ export interface SourceAdapter {
    * @param fsPath Path to resolve
    * @param isResolvingSource Whether the path to resolve is a single file
    */
-  getComponent(fsPath: SourcePath, isResolvingSource?: boolean): SourceComponent;
+  getComponent(fsPath: string, isResolvingSource?: boolean): SourceComponent;
 
   /**
    * Whether the adapter allows content-only metadata definitions.

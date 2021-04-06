@@ -7,37 +7,25 @@
 
 import { RegistryAccess } from '../registry';
 import { NodeFSTreeContainer, TreeContainer } from './treeContainers';
-import { MetadataComponent } from './types';
+import { MetadataComponent, ResolveManifestResult } from './types';
 import { parse as parseXml } from 'fast-xml-parser';
 import { normalizeToArray } from '../utils';
+import { Package, PackageTypeMembers } from 'jsforce';
 
-export interface PackageTypeMembers {
-  name: string;
-  members: string[];
-}
-
-export interface PackageManifest {
-  types: PackageTypeMembers[];
-  version: string;
-}
-
+// these types exist in jsforce, but xml parsing will interpret one element
+// as an object and more than one as an array. The manifest resolver takes care
+// of normalizing the parsed result.
 interface ParsedPackageTypeMembers {
   name: string;
   members: string | string[];
 }
 
-interface ParsedPackageManifest {
+interface ParsedPackageManifest extends Omit<Package, 'types'> {
   types: ParsedPackageTypeMembers | ParsedPackageTypeMembers[];
-  version: string;
-}
-
-export interface ResolveManifestResult {
-  components: MetadataComponent[];
-  apiVersion: string;
 }
 
 /**
- * Resolve MetadataComponents from a manifest file (package.xml)
+ * Resolve metadata components from a manifest file (package.xml)
  */
 export class ManifestResolver {
   private tree: TreeContainer;
@@ -49,19 +37,17 @@ export class ManifestResolver {
   }
 
   public async resolve(manifestPath: string): Promise<ResolveManifestResult> {
-    const components: MetadataComponent[] = [];
-
     const file = await this.tree.readFile(manifestPath);
-
+    const components: MetadataComponent[] = [];
     const parsedManifest: ParsedPackageManifest = parseXml(file.toString(), {
       stopNodes: ['version'],
     }).Package;
     const packageTypeMembers = normalizeToArray(parsedManifest.types);
-    const apiVersion = parsedManifest.version;
 
     for (const typeMembers of packageTypeMembers) {
       const typeName = typeMembers.name;
-      for (const fullName of normalizeToArray(typeMembers.members)) {
+      typeMembers.members = normalizeToArray(typeMembers.members);
+      for (const fullName of typeMembers.members) {
         let type = this.registry.getTypeByName(typeName);
         // if there is no / delimiter and it's a type in folders, infer folder component
         if (type.folderType && !fullName.includes('/')) {
@@ -71,6 +57,10 @@ export class ManifestResolver {
       }
     }
 
-    return { components, apiVersion };
+    const normalizedPackage = Object.assign(parsedManifest, {
+      types: packageTypeMembers as PackageTypeMembers[],
+    });
+
+    return { components, package: normalizedPackage };
   }
 }

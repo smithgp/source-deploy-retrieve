@@ -107,6 +107,16 @@ interface DirectoryIndex {
 }
 
 /**
+ * Strategy names for resolving metadata component from source files.
+ */
+export const enum AdapterStrategy {
+  Bundle = 'bundle',
+  Decomposed = 'decomposed',
+  MatchingContentFile = 'matchingContentFile',
+  MixedContent = 'mixedContent',
+}
+
+/**
  * Strategy names for handling component decomposition.
  */
 export const enum DecompositionStrategy {

@@ -4,6 +4,7 @@
  * Licensed under the BSD 3-Clause license.
  * For full license text, see LICENSE.txt file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
+import { PackageTypeMembers } from 'jsforce';
 import {
   MetadataApiDeploy,
   MetadataApiDeployOptions,
@@ -20,12 +21,7 @@ import {
   MetadataComponent,
   ComponentLike,
 } from '../resolve';
-import {
-  PackageTypeMembers,
-  FromManifestOptions,
-  PackageManifestObject,
-  FromSourceOptions,
-} from './types';
+import { FromManifestOptions, PackageManifestObject, FromSourceOptions } from './types';
 import { LazyCollection } from './lazyCollection';
 import { j2xParser } from 'fast-xml-parser';
 import { RegistryAccess } from '../registry';
@@ -35,7 +31,7 @@ export type RetrieveSetOptions = Omit<MetadataApiRetrieveOptions, 'components'>;
 
 /**
  * A collection containing no duplicate metadata members (`fullName` and `type` pairs). `ComponentSets`
- * are a convinient way of constructing a unique collection of components to perform operations such as
+ * are a convenient way of constructing a unique collection of components to perform operations such as
  * deploying and retrieving.
  *
  * Multiple {@link SourceComponent}s can be present in the set and correspond to the same member.
@@ -142,7 +138,7 @@ export class ComponentSet extends LazyCollection<MetadataComponent> {
       ? new ComponentSet([], options.registry)
       : undefined;
     const result = new ComponentSet([], options.registry);
-    result.apiVersion = manifest.apiVersion;
+    result.apiVersion = manifest.package.version;
 
     for (const component of manifest.components) {
       if (resolveIncludeSet) {
@@ -244,7 +240,7 @@ export class ComponentSet extends LazyCollection<MetadataComponent> {
   }
 
   /**
-   * Create a manifest in xml format (package.xml) based on the set components.
+   * Create a manifest in XML format (package.xml) based on the set components.
    *
    * @param indentation Number of spaces to indent lines by.
    */
@@ -297,7 +293,7 @@ export class ComponentSet extends LazyCollection<MetadataComponent> {
    * A pair is considered present in the set if one of the following criteria is met:
    *
    * - The pair is directly in the set
-   * - A wilcard component with the same `type` as the pair
+   * - A wildcard component with the same `type` as the pair
    * - If a parent is attached to the pair and the parent is directly in the set
    * - If a parent is attached to the pair, and a wildcard component's `type` matches the parent's `type`
    *

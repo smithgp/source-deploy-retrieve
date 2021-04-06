@@ -16,7 +16,9 @@ import { ComponentSet } from '../collections';
 import { MetadataType } from '../registry';
 
 /**
- * Resolver for metadata type and component objects.
+ * Resolve source-backed metadata components from file paths.
+ * @see SourceComponent
+ *
  * @internal
  */
 export class MetadataResolver {

@@ -12,15 +12,8 @@ import { MixedContentSourceAdapter } from './mixedContentSourceAdapter';
 import { DefaultSourceAdapter } from './defaultSourceAdapter';
 import { RegistryError } from '../../errors';
 import { ForceIgnore } from '../forceIgnore';
-import { MetadataType, RegistryAccess } from '../../registry';
+import { AdapterStrategy, MetadataType, RegistryAccess } from '../../registry';
 import { TreeContainer } from '../treeContainers';
-
-enum AdapterId {
-  Bundle = 'bundle',
-  Decomposed = 'decomposed',
-  MatchingContentFile = 'matchingContentFile',
-  MixedContent = 'mixedContent',
-}
 
 export class SourceAdapterFactory {
   private registry: RegistryAccess;
@@ -32,20 +25,20 @@ export class SourceAdapterFactory {
   }
 
   public getAdapter(type: MetadataType, forceIgnore = new ForceIgnore()): SourceAdapter {
-    const adapterId = type.strategies?.adapter as AdapterId;
-    switch (adapterId) {
-      case AdapterId.Bundle:
+    const adapterStrategy = type.strategies?.adapter as AdapterStrategy;
+    switch (adapterStrategy) {
+      case AdapterStrategy.Bundle:
         return new BundleSourceAdapter(type, this.registry, forceIgnore, this.tree);
-      case AdapterId.Decomposed:
+      case AdapterStrategy.Decomposed:
         return new DecomposedSourceAdapter(type, this.registry, forceIgnore, this.tree);
-      case AdapterId.MatchingContentFile:
+      case AdapterStrategy.MatchingContentFile:
         return new MatchingContentSourceAdapter(type, this.registry, forceIgnore, this.tree);
-      case AdapterId.MixedContent:
+      case AdapterStrategy.MixedContent:
         return new MixedContentSourceAdapter(type, this.registry, forceIgnore, this.tree);
       case undefined:
         return new DefaultSourceAdapter(type, this.registry, forceIgnore, this.tree);
       default:
-        throw new RegistryError('error_missing_adapter', [type.name, adapterId]);
+        throw new RegistryError('error_missing_adapter', [type.name, adapterStrategy]);
     }
   }
 }

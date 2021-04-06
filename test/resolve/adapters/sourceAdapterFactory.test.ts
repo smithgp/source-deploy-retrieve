@@ -25,13 +25,13 @@ describe('SourceAdapterFactory', () => {
   const tree = new VirtualTreeContainer([]);
   const factory = new SourceAdapterFactory(mockRegistry, tree);
 
-  it('Should return DefaultSourceAdapter for type with no assigned AdapterId', () => {
+  it('should return DefaultSourceAdapter for type with no assigned adapter', () => {
     const type = mockRegistryData.types.xmlinfolder;
     const adapter = factory.getAdapter(type);
     expect(adapter).to.deep.equal(new DefaultSourceAdapter(type, mockRegistry, undefined, tree));
   });
 
-  it('Should return MixedContentSourceAdapter for mixedContent AdapterId', () => {
+  it('should return MixedContentSourceAdapter for mixedContent adapter', () => {
     const type = mockRegistryData.types.mixedcontentsinglefile;
     const adapter = factory.getAdapter(type);
     expect(adapter).to.deep.equal(
@@ -40,7 +40,7 @@ describe('SourceAdapterFactory', () => {
     tree;
   });
 
-  it('Should return MatchingContentSourceAdapter for matchingContentFile AdapterId', () => {
+  it('should return MatchingContentSourceAdapter for matchingContentFile adapter', () => {
     const type = mockRegistryData.types.matchingcontentfile;
     const adapter = factory.getAdapter(type);
     expect(adapter).to.deep.equal(
@@ -48,19 +48,19 @@ describe('SourceAdapterFactory', () => {
     );
   });
 
-  it('Should return BundleSourceAdapter for bundle AdapterId', () => {
+  it('should return BundleSourceAdapter for bundle adapter', () => {
     const type = mockRegistryData.types.bundle;
     const adapter = factory.getAdapter(type);
     expect(adapter).to.deep.equal(new BundleSourceAdapter(type, mockRegistry, undefined, tree));
   });
 
-  it('Should return DecomposedSourceAdapter for decomposed AdapterId', () => {
+  it('should return DecomposedSourceAdapter for decomposed adapter', () => {
     const type = mockRegistryData.types.reginaking;
     const adapter = factory.getAdapter(type);
     expect(adapter).to.deep.equal(new DecomposedSourceAdapter(type, mockRegistry, undefined, tree));
   });
 
-  it('Should throw RegistryError for missing adapter', () => {
+  it('should throw RegistryError for missing adapter', () => {
     const type = mockRegistryData.types.missingstrategies;
     assert.throws(
       () => factory.getAdapter(type),

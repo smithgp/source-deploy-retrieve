@@ -9,6 +9,7 @@ export { RegistryAccess } from './registryAccess';
 export {
   MetadataType,
   MetadataRegistry,
+  AdapterStrategy,
   DecompositionStrategy,
   TransformerStrategy,
 } from './types';
