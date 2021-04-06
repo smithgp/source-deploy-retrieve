@@ -104,7 +104,10 @@ describe('ComponentSet', () => {
         ];
         const resolveStub = env.stub(ManifestResolver.prototype, 'resolve').resolves({
           components: expected,
-          apiVersion: mockRegistryData.apiVersion,
+          package: {
+            types: [],
+            version: mockRegistryData.apiVersion,
+          },
         });
         env
           .stub(RegistryAccess.prototype, 'getTypeByName')

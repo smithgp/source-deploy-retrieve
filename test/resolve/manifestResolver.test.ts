@@ -58,7 +58,7 @@ describe('ManifestResolver', () => {
       ];
 
       expect(result.components).to.deep.equal(expected);
-      expect(result.apiVersion).to.equal(mockRegistryData.apiVersion);
+      expect(result.package.version).to.equal(mockRegistryData.apiVersion);
     });
 
     it('should interpret a member of a type in folders with no delimiter as its corresponding folder type', async () => {
