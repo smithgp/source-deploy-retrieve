@@ -25,7 +25,7 @@ import {
   RequestStatus,
   MetadataApiRetrieveStatus,
 } from '../../../src/client/types';
-import { ComponentProperties } from '../../../src/resolve/sourceComponent';
+import { ConstructorProps } from '../../../src/resolve/sourceComponent';
 import { normalizeToArray } from '../../../src/utils';
 import { mockRegistry } from '../registry';
 
@@ -215,7 +215,7 @@ export async function stubMetadataRetrieve(
     };
     if (options.successes) {
       for (const component of successes) {
-        const props: ComponentProperties = {
+        const props: ConstructorProps = {
           name: component.fullName,
           type: component.type,
         };

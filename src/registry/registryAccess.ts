@@ -66,7 +66,7 @@ export class RegistryAccess {
 
   /**
    * Query the types that require a strict parent directory
-   * @see {@link MetadataType.strictDirectoryName}
+   * @see MetadataType.strictDirectoryName
    *
    * @returns An array of metadata type objects that require strict parent folder names
    */

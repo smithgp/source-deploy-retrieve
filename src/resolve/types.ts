@@ -7,6 +7,7 @@
 import { SourcePath } from '../common/types';
 import { SourceComponent } from '.';
 import { MetadataType } from '../registry';
+import { TreeContainer } from './treeContainers';
 
 /**
  * Base metadata interface extended by anything that represents a component.
@@ -20,7 +21,43 @@ interface Metadata {
  */
 export interface MetadataComponent extends Metadata {
   type: MetadataType;
+  /**
+   * Reference to the parent component if this component is a child.
+   */
   parent?: MetadataComponent;
+}
+
+/**
+ * Represents a component that has related source files in a file system.
+ */
+export interface SourceBackedComponent extends MetadataComponent {
+  /**
+   * The name of the component. Differs from `fullName` by not including any references
+   * to a component's parent or namespace.
+   *
+   * e.g. For a CustomField:
+   *```
+   * component.fullName === 'My_NS__My_Object__c.My_Field__c'
+   * component.name === 'My_Field__c'
+   * ```
+   */
+  name: string;
+  /**
+   * Path to the component's metadata xml file, if it has one.
+   */
+  xml?: string;
+  /**
+   * Path to a component's related files.
+   *
+   * If the component has an associated binary file, this path will point to it. If it has
+   * many files, it will point to the directory where the files are contained.
+   */
+  content?: string;
+  parent?: SourceComponent;
+  /**
+   * The file tree container the source files exist in.
+   */
+  tree: TreeContainer;
 }
 
 /**

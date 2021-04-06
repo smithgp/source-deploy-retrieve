@@ -8,7 +8,7 @@ import { join, basename } from 'path';
 import { parse } from 'fast-xml-parser';
 import { ForceIgnore } from './forceIgnore';
 import { NodeFSTreeContainer, TreeContainer, VirtualTreeContainer } from './treeContainers';
-import { MetadataComponent, VirtualDirectory } from './types';
+import { SourceBackedComponent, VirtualDirectory } from './types';
 import { baseName, parseMetadataXml } from '../utils';
 import { DEFAULT_PACKAGE_ROOT_SFDX } from '../common';
 import { JsonMap } from '@salesforce/ts-types';
@@ -16,18 +16,12 @@ import { SfdxFileFormat } from '../convert';
 import { trimUntil } from '../utils/path';
 import { MetadataType } from '../registry';
 
-export type ComponentProperties = {
-  name: string;
-  type: MetadataType;
-  xml?: string;
-  content?: string;
-  parent?: SourceComponent;
-};
+export type ConstructorProps = Omit<SourceBackedComponent, 'fullName' | 'tree'>;
 
 /**
- * Representation of a MetadataComponent in a file tree.
+ * A {@link SourceBackedComponent} with additional functionality to operate on a component's source files.
  */
-export class SourceComponent implements MetadataComponent {
+export class SourceComponent implements SourceBackedComponent {
   public readonly name: string;
   public readonly type: MetadataType;
   public readonly xml?: string;
@@ -37,7 +31,7 @@ export class SourceComponent implements MetadataComponent {
   private forceIgnore: ForceIgnore;
 
   constructor(
-    props: ComponentProperties,
+    props: ConstructorProps,
     tree: TreeContainer = new NodeFSTreeContainer(),
     forceIgnore = new ForceIgnore()
   ) {
@@ -50,8 +44,18 @@ export class SourceComponent implements MetadataComponent {
     this.forceIgnore = forceIgnore;
   }
 
+  /**
+   * A helper method to instantiate a `SourceComponent` against a fake (virtual)
+   * file system. Useful for mocking components.
+   * @see VirtualTreeContainer
+   *
+   * @param props SourceComponent properties
+   * @param fs - Structure of the virtual file system
+   * @param forceIgnore - ForceIgnore to exclude files when traversing source
+   * @returns A `SourceComponent` represented in a virtual file system
+   */
   public static createVirtualComponent(
-    props: ComponentProperties,
+    props: ConstructorProps,
     fs: VirtualDirectory[],
     forceIgnore?: ForceIgnore
   ): SourceComponent {
@@ -59,6 +63,16 @@ export class SourceComponent implements MetadataComponent {
     return new SourceComponent(props, tree, forceIgnore);
   }
 
+  /**
+   * Traverse the content files of the component.
+   *
+   * If `content` is a file path, `content` is returned as the only file path.
+   * If `content` is a directory, all of the files under the directory will be
+   * returned. If the component's `xml` file is contained in the `content` directory,
+   * it will be skipped.
+   *
+   * @returns An array of file paths, or an empty array if there is no content
+   */
   public walkContent(): string[] {
     const sources: string[] = [];
     if (this.content) {
@@ -71,12 +85,22 @@ export class SourceComponent implements MetadataComponent {
     return sources;
   }
 
+  /**
+   * Traverses the component's `content` directory for child components.
+   *
+   * @returns An array of child SourceComponents
+   */
   public getChildren(): SourceComponent[] {
     return this.content && !this.parent && this.type.children
       ? this.getChildrenInternal(this.content)
       : [];
   }
 
+  /**
+   * Parses the XML file located at `xml` into an object.
+   *
+   * @returns An object containing the XML contents. Returns an empty object if no `xml` is set
+   */
   public async parseXml(): Promise<JsonMap> {
     if (this.xml) {
       const contents = await this.tree.readFile(this.xml);
@@ -85,6 +109,18 @@ export class SourceComponent implements MetadataComponent {
     return {};
   }
 
+  /**
+   * Converts a file path into a relative version that would be present in a metadata package.
+   *
+   * ```typescript
+   * apexClass.content // => /path/to/MyClass.cls
+   * apexClass.getPackageRelativePath(apexClass.content, 'metadata'); // => classes/MyClass.cls
+   * ```
+   *
+   * @param fsPath - Path to create a relative package path for
+   * @param format - File format of the package
+   * @returns A relative metadata package version of the file path
+   */
   public getPackageRelativePath(fsPath: string, format: SfdxFileFormat): string {
     const { directoryName, suffix, inFolder, folderType } = this.type;
     // if there isn't a suffix, assume this is a mixed content component that must
