@@ -291,6 +291,12 @@ export interface QueryResult {
   records: ApexRecord[] | AuraRecord[] | LWCRecord[] | VFRecord[];
 }
 
+interface PackageVersion {
+  namespace: string;
+  majorNumber: number;
+  minorNumber: number;
+}
+
 export interface ApexRecord {
   Id: string;
   Name: string;
@@ -298,6 +304,11 @@ export interface ApexRecord {
   Body: string;
   ApiVersion: string;
   Status: string;
+  Metadata: {
+    apiVersion: number;
+    status: string;
+    packageVersions: PackageVersion[];
+  };
 }
 
 export interface VFRecord {
@@ -306,6 +317,14 @@ export interface VFRecord {
   NamespacePrefix: string;
   Markup: string;
   ApiVersion: string;
+  Metadata: {
+    apiVersion: number;
+    availableInTouch: boolean;
+    confirmationTokenRequired: boolean;
+    description: string;
+    label: string;
+    packageVersions: PackageVersion[];
+  };
 }
 
 export interface AuraRecord {
@@ -316,6 +335,12 @@ export interface AuraRecord {
     ApiVersion: string;
     DeveloperName: string;
     NamespacePrefix: string;
+    Metadata: {
+      apiVersion: number;
+      description: string;
+      packageVersions: PackageVersion[];
+      type: string;
+    };
   };
 }
 

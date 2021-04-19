@@ -24,7 +24,6 @@ const retrieveTypes = new Set([
   'ApexClass',
   'ApexTrigger',
   'ApexPage',
-  'ApexComponent',
   'AuraDefinitionBundle',
   'LightningComponentBundle',
 ]);

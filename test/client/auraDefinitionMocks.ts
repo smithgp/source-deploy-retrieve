@@ -5,7 +5,16 @@
  * For full license text, see LICENSE.txt file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
 
-import { QueryResult } from '../../src/client/types';
+import { AuraRecord, QueryResult } from '../../src/client/types';
+
+const auraMetadata = (type: string): AuraRecord['AuraDefinitionBundle']['Metadata'] => ({
+  apiVersion: 48,
+  description: 'A bundle',
+  type,
+  packageVersions: [],
+});
+
+const componentMetadata = auraMetadata('Component');
 
 export const auraComponent: QueryResult = {
   size: 8,
@@ -20,6 +29,7 @@ export const auraComponent: QueryResult = {
         ApiVersion: '48',
         DeveloperName: 'myTestComponent',
         NamespacePrefix: '',
+        Metadata: componentMetadata,
       },
       DefType: 'COMPONENT',
       Source: "<aura:component>\n    //that's what's up\n</aura:component>",
@@ -30,6 +40,7 @@ export const auraComponent: QueryResult = {
         ApiVersion: '48',
         DeveloperName: 'myTestComponent',
         NamespacePrefix: '',
+        Metadata: componentMetadata,
       },
       DefType: 'CONTROLLER',
       Source: '({\n    myAction : function(component, event, helper) {\n\n    }\n})',
@@ -40,6 +51,7 @@ export const auraComponent: QueryResult = {
         ApiVersion: '48',
         DeveloperName: 'myTestComponent',
         NamespacePrefix: '',
+        Metadata: componentMetadata,
       },
       DefType: 'DOCUMENTATION',
       Source:
@@ -51,6 +63,7 @@ export const auraComponent: QueryResult = {
         ApiVersion: '48',
         DeveloperName: 'myTestComponent',
         NamespacePrefix: '',
+        Metadata: componentMetadata,
       },
       DefType: 'RENDERER',
       Source: '({\n\n// Your renderer method overrides go here\n\n})',
@@ -61,6 +74,7 @@ export const auraComponent: QueryResult = {
         ApiVersion: '48',
         DeveloperName: 'myTestComponent',
         NamespacePrefix: '',
+        Metadata: componentMetadata,
       },
       DefType: 'DESIGN',
       Source: '<design:component >\n\n</design:component>',
@@ -71,6 +85,7 @@ export const auraComponent: QueryResult = {
         ApiVersion: '48',
         DeveloperName: 'myTestComponent',
         NamespacePrefix: '',
+        Metadata: componentMetadata,
       },
       DefType: 'SVG',
       Source:
@@ -82,6 +97,7 @@ export const auraComponent: QueryResult = {
         ApiVersion: '48',
         DeveloperName: 'myTestComponent',
         NamespacePrefix: '',
+        Metadata: componentMetadata,
       },
       DefType: 'HELPER',
       Source: '({\n    helperMethod : function() {\n\n    }\n})',
@@ -92,6 +108,7 @@ export const auraComponent: QueryResult = {
         ApiVersion: '48',
         DeveloperName: 'myTestComponent',
         NamespacePrefix: '',
+        Metadata: componentMetadata,
       },
       DefType: 'STYLE',
       Source: '.THIS {\n}',
@@ -112,6 +129,7 @@ export const auraApplication: QueryResult = {
         ApiVersion: '35',
         DeveloperName: 'myTestApp',
         NamespacePrefix: '',
+        Metadata: auraMetadata('Application'),
       },
       DefType: 'APPLICATION',
       Source: '<aura:application>\n\n</aura:application>',
@@ -132,6 +150,7 @@ export const auraEvent: QueryResult = {
         ApiVersion: '43',
         DeveloperName: 'testEvent',
         NamespacePrefix: '',
+        Metadata: auraMetadata('Event'),
       },
       DefType: 'EVENT',
       Source: '<aura:event type="APPLICATION" description="Event template"/>',
@@ -152,6 +171,7 @@ export const auraInterface: QueryResult = {
         ApiVersion: '46',
         DeveloperName: 'testInterface',
         NamespacePrefix: '',
+        Metadata: auraMetadata('Interface'),
       },
       DefType: 'INTERFACE',
       Source:
@@ -173,6 +193,7 @@ export const auraTokens: QueryResult = {
         ApiVersion: '46',
         DeveloperName: 'testAuraTokens',
         NamespacePrefix: '',
+        Metadata: auraMetadata('Tokens'),
       },
       DefType: 'TOKENS',
       Source: '<aura:tokens>\n\t\n</aura:tokens>',

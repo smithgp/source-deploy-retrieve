@@ -5,9 +5,12 @@
  * For full license text, see LICENSE.txt file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
 import { dirname, join, sep } from 'path';
-import { generateMetaXML, generateMetaXMLPath, trimMetaXmlSuffix } from '../utils';
+import { generateMetaXMLPath, trimMetaXmlSuffix } from '../utils';
 import { ApexRecord, AuraRecord, LWCRecord, VFRecord, QueryResult } from './types';
 import { SourceComponent } from '../resolve';
+import { JsonMap } from '@salesforce/ts-types';
+import { XML_NS_KEY, XML_NS_URL } from '../common';
+import { JsToXml } from '../convert/streams';
 
 export function buildQuery(mdComponent: SourceComponent, namespace = ''): string {
   let queryString = '';
@@ -17,16 +20,14 @@ export function buildQuery(mdComponent: SourceComponent, namespace = ''): string
   switch (typeName) {
     case 'ApexClass':
     case 'ApexTrigger':
-      queryString = `Select Id, ApiVersion, Body, Name, NamespacePrefix, Status from ${typeName} where Name = '${fullName}' and NamespacePrefix = '${namespace}'`;
+      queryString = `Select Id, Name, NamespacePrefix, Body, Metadata from ${typeName} where Name = '${fullName}' and NamespacePrefix = '${namespace}'`;
       break;
-    case 'ApexComponent':
     case 'ApexPage':
-      queryString = `Select Id, ApiVersion, Name, NamespacePrefix, Markup from ${typeName} where Name = '${fullName}' and NamespacePrefix = '${namespace}'`;
+      queryString = `Select Id, Name, NamespacePrefix, Markup, Metadata from ${typeName} where Name = '${fullName}' and NamespacePrefix = '${namespace}'`;
       break;
     case 'AuraDefinitionBundle':
-      queryString =
-        'Select Id, AuraDefinitionBundle.ApiVersion, AuraDefinitionBundle.DeveloperName, ';
-      queryString += `AuraDefinitionBundle.NamespacePrefix, DefType, Source from AuraDefinition where AuraDefinitionBundle.DeveloperName = '${fullName}' and AuraDefinitionBundle.NamespacePrefix = '${namespace}'`;
+      queryString = 'Select Id, AuraDefinitionBundle.DeveloperName, ';
+      queryString += `AuraDefinitionBundle.NamespacePrefix, DefType, Source, AuraDefinitionBundle.Metadata from AuraDefinition where AuraDefinitionBundle.DeveloperName = '${fullName}' and AuraDefinitionBundle.NamespacePrefix = '${namespace}'`;
       break;
     case 'LightningComponentBundle':
       queryString =
@@ -73,14 +74,28 @@ function getAuraSourceName(componentPath: string, fileNamePrefix: string, defTyp
   }
 }
 
+function createMetadataXml(typeName: string, metadata: JsonMap): string {
+  const xml: JsonMap = {
+    [typeName]: {
+      [XML_NS_KEY]: XML_NS_URL,
+    },
+  };
+  for (const [key, value] of Object.entries(metadata)) {
+    if (typeof value !== 'object' || key === 'packageVersions') {
+      const entries = xml[typeName] as JsonMap;
+      entries[key] = key === 'apiVersion' ? `${value}.0` : value;
+    }
+  }
+  return new JsToXml(xml).read().toString();
+}
+
 export function queryToFileMap(
   queryResult: QueryResult,
   mdComponent: SourceComponent,
   overrideOutputPath?: string
 ): Map<string, string> {
   const typeName = mdComponent.type.name;
-  let apiVersion: string;
-  let status: string;
+  let metadata: any;
   // If output is defined it overrides where the component will be stored
   const mdSourcePath = overrideOutputPath
     ? trimMetaXmlSuffix(overrideOutputPath)
@@ -90,27 +105,28 @@ export function queryToFileMap(
     case 'ApexClass':
     case 'ApexTrigger':
       const apexRecord = queryResult.records[0] as ApexRecord;
-      status = apexRecord.Status;
-      apiVersion = apexRecord.ApiVersion;
+      metadata = apexRecord.Metadata;
       saveFilesMap.set(mdSourcePath, apexRecord.Body);
       break;
-    case 'ApexComponent':
     case 'ApexPage':
       const vfRecord = queryResult.records[0] as VFRecord;
-      apiVersion = vfRecord.ApiVersion;
+      metadata = vfRecord.Metadata;
       saveFilesMap.set(mdSourcePath, vfRecord.Markup);
       break;
     case 'AuraDefinitionBundle':
       const auraRecord = queryResult.records as AuraRecord[];
-      apiVersion = auraRecord[0].AuraDefinitionBundle.ApiVersion;
       auraRecord.forEach((item) => {
         const cmpName = getAuraSourceName(mdSourcePath, mdComponent.name, item.DefType);
         saveFilesMap.set(cmpName, item.Source);
+        if (!metadata) {
+          metadata = item.AuraDefinitionBundle.Metadata;
+        }
       });
       break;
     case 'LightningComponentBundle':
       const lwcRecord = queryResult.records as LWCRecord[];
       const bundleParentPath = mdSourcePath.substring(0, mdSourcePath.lastIndexOf(`${sep}lwc`));
+      // NOTE: LightningComponentBundle query results returns the -meta.xml file
       lwcRecord.forEach((item) => {
         const cmpName = join(bundleParentPath, item.FilePath);
         saveFilesMap.set(cmpName, item.Source);
@@ -119,12 +135,9 @@ export function queryToFileMap(
     default:
   }
 
-  // NOTE: LightningComponentBundle query results returns the -meta.xml file
-  if (typeName !== 'LightningComponentBundle') {
-    saveFilesMap.set(
-      generateMetaXMLPath(mdSourcePath),
-      generateMetaXML(typeName, apiVersion, status)
-    );
+  if (metadata && mdComponent.xml) {
+    // TODO: Respect overrideOutputPath
+    saveFilesMap.set(mdComponent.xml, createMetadataXml(typeName, metadata));
   }
 
   return saveFilesMap;

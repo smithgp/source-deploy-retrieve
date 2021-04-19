@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, salesforce.com, inc.
+ * Copyright (c) 2021, salesforce.com, inc.
  * All rights reserved.
  * Licensed under the BSD 3-Clause license.
  * For full license text, see LICENSE.txt file in the repo root or https://opensource.org/licenses/BSD-3-Clause
@@ -49,6 +49,11 @@ describe('Tooling Retrieve', () => {
         Name: 'myTestClass',
         NamespacePrefix: null,
         Status: 'Active',
+        Metadata: {
+          apiVersion: 32,
+          status: 'Active',
+          packageVersions: [],
+        },
       },
     ],
     size: 1,
@@ -107,11 +112,9 @@ describe('Tooling Retrieve', () => {
 
     expect(retrieveResults).to.be.a('object');
     expect(retrieveResults.success).to.equal(true);
-    expect(
-      toolingQueryStub.calledOnceWith(
-        `Select Id, ApiVersion, Body, Name, NamespacePrefix, Status from ApexClass where Name = 'myTestClass' and NamespacePrefix = ''`
-      )
-    ).to.equal(true);
+    expect(toolingQueryStub.firstCall.args[0]).to.equal(
+      `Select Id, Name, NamespacePrefix, Body, Metadata from ApexClass where Name = 'myTestClass' and NamespacePrefix = ''`
+    );
   });
 
   it('should generate correct query to retrieve an ApexClass using namespace', async () => {
@@ -138,11 +141,9 @@ describe('Tooling Retrieve', () => {
 
     expect(retrieveResults).to.be.a('object');
     expect(retrieveResults.success).to.equal(true);
-    expect(
-      toolingQueryStub.calledOnceWith(
-        `Select Id, ApiVersion, Body, Name, NamespacePrefix, Status from ApexClass where Name = 'myTestClass' and NamespacePrefix = 'tstr'`
-      )
-    ).to.equal(true);
+    expect(toolingQueryStub.firstCall.args[0]).to.equal(
+      `Select Id, Name, NamespacePrefix, Body, Metadata from ApexClass where Name = 'myTestClass' and NamespacePrefix = 'tstr'`
+    );
   });
 
   it('should retrieve an ApexClass using filepath', async () => {
