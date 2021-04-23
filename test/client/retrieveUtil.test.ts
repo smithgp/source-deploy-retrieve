@@ -15,7 +15,7 @@ import {
   auraEvent,
   auraInterface,
   auraTokens,
-} from './auraDefinitionMocks';
+} from '../mock/client/auraDefinitionMocks';
 import { lwcComponentMock } from './lightningComponentMocks';
 import { SourceComponent, VirtualTreeContainer } from '../../src/resolve';
 import { registry } from '../../src';
