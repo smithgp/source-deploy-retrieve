@@ -18,7 +18,7 @@ import { RegistryAccess } from '../registry';
 
 type WithNamespace = { namespace?: string };
 export type ToolingDeployOptions = WithNamespace;
-export type ToolingRetrieveOptions = WithNamespace & { output?: string };
+export type ToolingRetrieveOptions = WithNamespace;
 
 const retrieveTypes = new Set([
   'ApexClass',
@@ -37,6 +37,18 @@ export const deployTypes = new Map([
   ['LightningComponentBundle', 'LightningComponentResource'],
 ]);
 
+/**
+ * Tooling API wrapper to deploy and retrieve components with.
+ *
+ * __This class is considered outdated and is subject to removal or changes
+ * at any point. Tooling API is mostly beneficial in the retrieve scenario
+ * for single components only.__
+ *
+ * __TODO__: Migrate tooling retrieve logic to its own MetadataTransfer implementation.
+ * Remove this class once finished.
+ *
+ * @deprecated
+ */
 export class ToolingApi {
   protected connection: Connection;
   protected resolver: MetadataResolver;
@@ -52,7 +64,6 @@ export class ToolingApi {
     options: ToolingRetrieveOptions & { paths: string[] }
   ): Promise<SourceRetrieveResult> {
     return this.retrieve({
-      output: options.output,
       namespace: options.namespace,
       components: ComponentSet.fromSource({ fsPaths: [options.paths[0]], registry: this.registry }),
     });
@@ -102,7 +113,7 @@ export class ToolingApi {
         };
       }
 
-      const saveFilesMap = queryToFileMap(queryResult, mdComponent, options.output);
+      const saveFilesMap = queryToFileMap(queryResult, mdComponent);
       createFiles(saveFilesMap);
 
       retrieveResult = {

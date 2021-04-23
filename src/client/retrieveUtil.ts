@@ -5,7 +5,7 @@
  * For full license text, see LICENSE.txt file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
 import { dirname, join, sep } from 'path';
-import { generateMetaXMLPath, trimMetaXmlSuffix } from '../utils';
+import { trimMetaXmlSuffix } from '../utils';
 import { ApexRecord, AuraRecord, LWCRecord, VFRecord, QueryResult } from './types';
 import { SourceComponent } from '../resolve';
 import { JsonMap } from '@salesforce/ts-types';
@@ -95,7 +95,7 @@ export function queryToFileMap(
   overrideOutputPath?: string
 ): Map<string, string> {
   const typeName = mdComponent.type.name;
-  let metadata: any;
+  let metadataField: any;
   // If output is defined it overrides where the component will be stored
   const mdSourcePath = overrideOutputPath
     ? trimMetaXmlSuffix(overrideOutputPath)
@@ -105,12 +105,12 @@ export function queryToFileMap(
     case 'ApexClass':
     case 'ApexTrigger':
       const apexRecord = queryResult.records[0] as ApexRecord;
-      metadata = apexRecord.Metadata;
+      metadataField = apexRecord.Metadata;
       saveFilesMap.set(mdSourcePath, apexRecord.Body);
       break;
     case 'ApexPage':
       const vfRecord = queryResult.records[0] as VFRecord;
-      metadata = vfRecord.Metadata;
+      metadataField = vfRecord.Metadata;
       saveFilesMap.set(mdSourcePath, vfRecord.Markup);
       break;
     case 'AuraDefinitionBundle':
@@ -118,8 +118,8 @@ export function queryToFileMap(
       auraRecord.forEach((item) => {
         const cmpName = getAuraSourceName(mdSourcePath, mdComponent.name, item.DefType);
         saveFilesMap.set(cmpName, item.Source);
-        if (!metadata) {
-          metadata = item.AuraDefinitionBundle.Metadata;
+        if (!metadataField) {
+          metadataField = item.AuraDefinitionBundle.Metadata;
         }
       });
       break;
@@ -135,9 +135,8 @@ export function queryToFileMap(
     default:
   }
 
-  if (metadata && mdComponent.xml) {
-    // TODO: Respect overrideOutputPath
-    saveFilesMap.set(mdComponent.xml, createMetadataXml(typeName, metadata));
+  if (metadataField && mdComponent.xml) {
+    saveFilesMap.set(mdComponent.xml, createMetadataXml(typeName, metadataField));
   }
 
   return saveFilesMap;

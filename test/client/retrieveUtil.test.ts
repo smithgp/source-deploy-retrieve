@@ -8,7 +8,7 @@
 import * as path from 'path';
 import { expect } from 'chai';
 import { buildQuery, queryToFileMap } from '../../src/client/retrieveUtil';
-import { QueryResult, VFRecord } from '../../src/client/types';
+import { QueryResult } from '../../src/client/types';
 import {
   auraComponent,
   auraApplication,
@@ -19,8 +19,6 @@ import {
 import { lwcComponentMock } from './lightningComponentMocks';
 import { SourceComponent, VirtualTreeContainer } from '../../src/resolve';
 import { registry } from '../../src';
-import { JsToXml } from '../../src/convert/streams';
-import { XML_NS_KEY, XML_NS_URL } from '../../src/common';
 
 describe('Tooling Retrieve Util', () => {
   const rootPath = path.join('file', 'path');
@@ -188,48 +186,6 @@ describe('Tooling Retrieve Util', () => {
         '<apex:page>\n<h1>Hello</h1>\n</apex:page>'
       );
     });
-
-    // it('should generate correct file map for ApexPage metadata with overrideOutput param', () => {
-    //   const apexPageQueryResult: QueryResult = {
-    //     done: true,
-    //     entityTypeName: 'ApexPage',
-    //     records: [
-    //       {
-    //         ApiVersion: '45',
-    //         Markup: '<apex:page>\n<h1>Hello</h1>\n</apex:page>',
-    //         Id: '066xxx000000034',
-    //         Name: 'myPage',
-    //         NamespacePrefix: null,
-    //       },
-    //     ],
-    //     size: 1,
-    //     totalSize: 1,
-    //     queryLocator: null,
-    //   };
-    //   const overrideOutputPathMeta = path.join(
-    //     'file',
-    //     'different',
-    //     'path',
-    //     'myTestClass.cls-meta.xml'
-    //   );
-    //   const overrideOutputPath = path.join('file', 'different', 'path', 'myTestClass.cls');
-    //   const resultMap = queryToFileMap(
-    //     apexPageQueryResult,
-    //     pageMDComponent,
-    //     overrideOutputPathMeta
-    //   );
-    //   expect(resultMap.size).to.equal(2);
-    //   expect(resultMap.has(overrideOutputPathMeta)).to.be.true;
-    //   let expectedMetaXML = '<?xml version="1.0" encoding="UTF-8"?>\n';
-    //   expectedMetaXML += '<ApexPage xmlns="http://soap.sforce.com/2006/04/metadata">\n';
-    //   expectedMetaXML += '\t<apiVersion>45.0</apiVersion>\n';
-    //   expectedMetaXML += '</ApexPage>';
-    //   expect(resultMap.get(overrideOutputPathMeta)).to.equal(expectedMetaXML);
-    //   expect(resultMap.has(overrideOutputPath)).to.be.true;
-    //   expect(resultMap.get(overrideOutputPath)).to.equal(
-    //     '<apex:page>\n<h1>Hello</h1>\n</apex:page>'
-    //   );
-    // });
 
     it('should generate correct file map for AuraDefinition component metadata', () => {
       const bundlePath = path.join('file', 'path', 'aura', 'myAuraCmp');
