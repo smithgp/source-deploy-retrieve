@@ -11,7 +11,7 @@ import { LibraryError } from '../errors';
 import { SourcePath } from '../common';
 import * as unzipper from 'unzipper';
 import { Readable } from 'stream';
-import { VirtualDirectory, ZipEntry } from './types';
+import { VirtualDirectory } from './types';
 
 /**
  * A container for interacting with a file system. Operations such as component resolution,
@@ -71,6 +71,13 @@ export abstract class TreeContainer {
    */
   public abstract readFile(fsPath: SourcePath): Promise<Buffer>;
   /**
+   * Reads the contents of a file synchronously.
+   *
+   * @param fsPath
+   * @returns A buffer of the file contents
+   */
+  public abstract readFileSync(fsPath: SourcePath): Buffer;
+  /**
    * Creates a readable stream of a file's contents.
    *
    * @param fsPath - File path to create a readable stream from
@@ -100,9 +107,19 @@ export class NodeFSTreeContainer extends TreeContainer {
     return Promise.resolve(readFileSync(fsPath));
   }
 
+  public readFileSync(fsPath: SourcePath): Buffer {
+    return readFileSync(fsPath);
+  }
+
   public stream(fsPath: SourcePath): Readable {
     return createReadStream(fsPath);
   }
+}
+
+interface ZipEntry {
+  path: string;
+  stream?: () => unzipper.Entry;
+  buffer?: () => Promise<Buffer>;
 }
 
 /**
@@ -151,6 +168,11 @@ export class ZipTreeContainer extends TreeContainer {
       return (this.tree.get(fsPath) as ZipEntry).buffer();
     }
     throw new LibraryError('error_expected_file_path', fsPath);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  public readFileSync(fsPath: string): Buffer {
+    throw new Error('Method not implemented');
   }
 
   public stream(fsPath: string): Readable {
@@ -217,13 +239,17 @@ export class VirtualTreeContainer extends TreeContainer {
   }
 
   public readFile(fsPath: SourcePath): Promise<Buffer> {
+    return Promise.resolve(this.readFileSync(fsPath));
+  }
+
+  public readFileSync(fsPath: SourcePath): Buffer {
     if (this.exists(fsPath)) {
       let data = this.fileContents.get(fsPath);
       if (!data) {
         data = Buffer.from('');
         this.fileContents.set(fsPath, data);
       }
-      return Promise.resolve(data);
+      return data;
     }
     throw new LibraryError('error_path_not_found', fsPath);
   }
